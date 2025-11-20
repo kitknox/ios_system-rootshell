@@ -8,6 +8,9 @@
 #import <UIKit/UIKit.h>
 
 #include "ios_system.h"
+#include "ios_session_manager.h"
+#include "ios_env_manager.h"
+#include "ios_interpreter_pool.h"
 
 // ios_system(cmd): Executes the command in "cmd". The goal is to be a drop-in replacement for system(), as much as possible.
 // We assume cmd is the command. If vim has prepared '/bin/sh -c "(command -arguments) < inputfile > outputfile",
@@ -162,11 +165,12 @@ const char* ios_getBookmarkedVersion(const char* p) {
     return p;
 }
 
-static NSMutableDictionary* sessionList;
+// Legacy: aliasDictionary still uses NSMutableDictionary (will be refactored in Phase 1.4)
 static NSMutableDictionary* aliasDictionary;
 
-// pointer to sessionParameters. thread-local variable so the entire system is thread-safe.
-// The sessionParameters pointer is shared by all threads in the same session.
+// Thread-local session reference and parameters pointer
+// Each thread holds a reference to prevent session deletion while in use
+static __thread ios_session_ref_t* currentSessionRef = NULL;
 static __thread sessionParameters* currentSession = NULL;
 // Python3 multiple interpreters:
 // limit to 6 = 1 kernel, 4 notebooks, one extra.
@@ -256,32 +260,38 @@ sig_t ios_signal(int value, sig_t function) {
 }
 
 NSString *ios_getLogicalPWD(const void* sessionId) {
-    id sessionKey = @((NSUInteger)sessionId);
-    if (sessionList == nil) {
+    ios_session_manager_init();
+
+    // Get session (thread-safe)
+    ios_session_ref_t* ref = ios_session_get(sessionId);
+    if (ref == NULL) {
         return nil;
     }
-    sessionParameters *session = (sessionParameters*)[[sessionList objectForKey: sessionKey] pointerValue];
-    if (session == nil) {
-        return nil;
-    }
-    return @(session->currentDir);
+
+    sessionParameters* session = ios_session_get_params(ref);
+    NSString* result = @(session->currentDir);
+
+    // Release reference
+    ios_session_release(ref);
+
+    return result;
 }
 
 #undef getenv
 void ios_setWindowSize(int width, int height, const void* sessionId) {
     // You can set the window size for a session that is not currently running (e.g. because "sh_session" is running).
     // So we set it without calling ios_switchSession:
-    sessionParameters* resizedSession;
+    ios_session_manager_init();
 
-    id sessionKey = @((NSUInteger)sessionId);
-    if (sessionList == nil) {
-        return;
-    }
-    resizedSession = (sessionParameters*)[[sessionList objectForKey: sessionKey] pointerValue];
-    if (resizedSession == nil) {
+    ios_session_ref_t* ref = ios_session_get(sessionId);
+    if (ref == NULL) {
         return;
     }
 
+    sessionParameters* resizedSession = ios_session_get_params(ref);
+
+    // Acquire write lock since we're modifying session data
+    ios_session_write_lock(resizedSession);
     sprintf(resizedSession->columns, "%d", MIN(width, 9999));
     sprintf(resizedSession->lines, "%d", MIN(height, 9999));
     // Also send SIGWINCH to the main thread of resizedSession:
@@ -294,6 +304,10 @@ void ios_setWindowSize(int width, int height, const void* sessionId) {
     if (resizedSession->mainThreadId != NULL) {
         pthread_kill(resizedSession->mainThreadId, SIGWINCH);
     }
+
+    // Release write lock and session reference
+    ios_session_write_unlock(resizedSession);
+    ios_session_release(ref);
 }
 
 extern char* libc_getenv(const char* variableName);
@@ -366,7 +380,8 @@ typedef struct _functionParameters {
     bool isPipeOut;
     bool isPipeErr;
     bool backgroundCommand;
-    int  numInterpreter;
+    int  numInterpreter;                          // Legacy: slot number for backward compat
+    ios_interp_slot_handle_t* interp_handle;     // New: thread-safe interpreter slot handle
     bool storeRootThread;
     sessionParameters* session;
 } functionParameters;
@@ -447,20 +462,29 @@ static void cleanup_function(void* parameters) {
     NSString* commandNameString = [NSString stringWithCString: commandName encoding:NSUTF8StringEncoding];
     // Can we close stdin too?
     bool mustCloseStdin = fileno(p->stdin) != fileno(stdin);
-    if (strncmp(commandName, "python", 6) == 0) {
-        // It could be one of the multiple python3 interpreters
+
+    // Release interpreter slot if one was acquired
+    if (p->interp_handle != NULL) {
+        ios_interp_type_t type = ios_interp_get_type(p->interp_handle);
+        NSLog(@"Releasing %s interpreter slot %d", ios_interp_type_name(type), p->numInterpreter);
+        ios_interp_release(p->interp_handle);
+        p->interp_handle = NULL;
+
+        // Python interpreters should not close stdin
+        if (type == IOS_INTERP_PYTHON) {
+            mustCloseStdin = false;
+        }
+    }
+    // Legacy fallback for old-style interpreter tracking (remove after full migration)
+    else if (strncmp(commandName, "python", 6) == 0) {
         PythonIsRunning[p->numInterpreter] = false;
         mustCloseStdin = false;
     }
-    // Same with multiple perl or TeX interpreters:
     else if (strncmp(commandName, "perl", 4) == 0) {
-        NSLog(@"Ending a Perl interpreter: %d", p->numInterpreter);
         PerlIsRunning[p->numInterpreter] = false;
     } else if ([TeXcommands containsObject: commandNameString]) {
-        NSLog(@"Ending a TeX command: %d", p->numInterpreter);
         TeXIsRunning[p->numInterpreter] = false;
     } else if (strcmp(commandName, "dash") == 0) {
-        NSLog(@"Ending a dash command: %d", p->numInterpreter);
         dashIsRunning[p->numInterpreter] = false;
     } else if ((strcmp(commandName, "ssh") == 0) || (strcmp(commandName, "scp") == 0) || (strcmp(commandName, "sftp") == 0)) {
         NSLog(@"Ending a ssh command: %d", p->numInterpreter);
@@ -561,6 +585,10 @@ static void cleanup_function(void* parameters) {
     if (currentSession->mainThreadId == current_thread) {
         currentSession->mainThreadId = 0;
     }
+
+    // Cleanup per-thread environment
+    ios_env_cleanup_thread();
+
     cleanup_counter--;
     NSLog(@"returning from cleanup_function, session: %s\n", (char*)currentSession->context);
 }
@@ -590,6 +618,10 @@ static void* run_function(void* parameters) {
           (p->stdout == nil) ? -1 : fileno(p->stdout),
           (p->stderr == nil) ? -1 : fileno(p->stderr), p->argv[0]);
     ios_storeThreadId(pthread_self());
+
+    // Initialize per-thread environment (copy-on-write from parent)
+    ios_env_init_thread(p->session != NULL ? p->session->mainThreadId : 0);
+
     if (p->storeRootThread && (p->session != NULL)) {
         NSLog(@"Storing thread_id: %x as root_thread\n", pthread_self());
         p->session->current_command_root_thread = pthread_self();
@@ -998,16 +1030,28 @@ int ios_setMiniRoot(NSString* mRoot) {
     return 1; // mission accomplished
 }
 
-// Called when 
+// Define default session ID for functions called before explicit session switch
+static const void* default_session_id = (const void*)"default_session";
+
+// Called when
 int ios_setMiniRootURL(NSURL* mRoot) {
     NSFileManager *fileManager = [[NSFileManager alloc] init];
+
+    // Ensure we have a session (create default if needed)
     if (currentSession == NULL) {
-        currentSession = malloc(sizeof(sessionParameters));
-        initSessionParameters(currentSession);
+        ios_session_manager_init();
+        currentSessionRef = ios_session_get_or_create(default_session_id);
+        currentSession = ios_session_get_params(currentSessionRef);
+        currentSession->context = default_session_id;
     }
+
+    // Modify session with write lock
+    ios_session_write_lock(currentSession);
     strcpy(currentSession->localMiniRoot, [mRoot.path UTF8String]);
     strcpy(currentSession->previousDirectory, currentSession->currentDir);
     strcpy(currentSession->currentDir, [[mRoot path] UTF8String]);
+    ios_session_write_unlock(currentSession);
+
     [fileManager changeCurrentDirectoryPath:[mRoot path]];
     return 1; // mission accomplished
 }
@@ -1910,19 +1954,28 @@ int sh_main(int argc, char** argv) {
     }
     // If we reach this point, we have multiple commands to execute.
     // Store current sesssion, create a new session specific for this, execute commands
-    id sessionKey = @((NSUInteger)sh_session);
-    if (sessionList != nil) {
-        sessionParameters* runningShellSession = (sessionParameters*)[[sessionList objectForKey: sessionKey] pointerValue];
-        if (runningShellSession != NULL) {
-            if ((runningShellSession->lastThreadId != 0) && (runningShellSession->lastThreadId != pthread_self())) {
-                fprintf(thread_stderr, "Sorry, you cannot run sh while another sh command is running\n");
-                NSLog(@"There is another sh session running: last_thread= %x", runningShellSession->lastThreadId);
-                argv[0][0] = 'h'; // prevent termination in cleanup_function
-                return 1;
-            } else {
-                NSLog(@"There is another sh session running: last_thread= %x us= %x. Continuing.", runningShellSession->lastThreadId, pthread_self());
-            }
+
+    // Check if sh_session is already running (thread-safe)
+    ios_session_manager_init();
+    ios_session_ref_t* sh_session_ref = ios_session_get(sh_session);
+    if (sh_session_ref != NULL) {
+        sessionParameters* runningShellSession = ios_session_get_params(sh_session_ref);
+
+        ios_session_read_lock(runningShellSession);
+        pthread_t last_thread = runningShellSession->lastThreadId;
+        ios_session_read_unlock(runningShellSession);
+
+        if ((last_thread != 0) && (last_thread != pthread_self())) {
+            fprintf(thread_stderr, "Sorry, you cannot run sh while another sh command is running\n");
+            NSLog(@"There is another sh session running: last_thread= %x", last_thread);
+            ios_session_release(sh_session_ref);
+            argv[0][0] = 'h'; // prevent termination in cleanup_function
+            return 1;
+        } else {
+            NSLog(@"There is another sh session running: last_thread= %x us= %x. Continuing.", last_thread, pthread_self());
         }
+
+        ios_session_release(sh_session_ref);
     }
     NSFileManager *fileManager = [[NSFileManager alloc] init];
     NSLog(@"parentSession = %x currentSession = %x currentDir = %s\n", parentSession, currentSession, [fileManager currentDirectoryPath].UTF8String);
@@ -2179,39 +2232,63 @@ int ios_killpid(pid_t pid, int sig) {
 void ios_switchSession(const void* sessionId) {
     char* sessionName = (char*) sessionId;
     // NSLog(@"Switching to session: %s\n", sessionName);
+
+    // Thread-safe session switching using new session manager
+
+    // Check if we're already in the correct session (fast path)
     if ((currentSession != nil) && (parentSession != nil)) {
         if ((currentSession->context == sh_session) && (parentSession->context == sessionName)) {
             // If we are running a sh_session inside the requested sessionId, there is no need to change:
             return;
         }
     }
-    
+
     if ((currentSession != nil) && (currentSession->context != NULL) && (strcmp(currentSession->context, sessionName) == 0)) {
         // Already inside this session: do nothing
         return;
     }
 
-    NSFileManager *fileManager = [[NSFileManager alloc] init];
-    id sessionKey = @((NSUInteger)sessionId);
-    if (sessionList == nil) {
-        sessionList = [NSMutableDictionary new];
-        if (currentSession != NULL) [sessionList setObject: [NSValue valueWithPointer:currentSession] forKey: sessionKey];
+    // Release current session reference if we have one
+    if (currentSessionRef != NULL) {
+        ios_session_release(currentSessionRef);
+        currentSessionRef = NULL;
+        currentSession = NULL;
     }
-    currentSession = (sessionParameters*)[[sessionList objectForKey: sessionKey] pointerValue];
-    
-    if (currentSession == NULL) {
-        sessionParameters* newSession =  malloc(sizeof(sessionParameters));
-        initSessionParameters(newSession);
-        [sessionList setObject: [NSValue valueWithPointer:newSession] forKey: sessionKey];
-        currentSession = newSession;
-    } else {
-        NSString* currentSessionDir = [NSString stringWithCString:currentSession->currentDir encoding:NSUTF8StringEncoding];
-        if (![currentSessionDir isEqualToString:[fileManager currentDirectoryPath]]) {
-            [fileManager changeCurrentDirectoryPath:currentSessionDir];
-        }
-        // Da fuck???? Yeah, that would hurt. Why is it there?
+
+    // Initialize session manager (idempotent, thread-safe)
+    ios_session_manager_init();
+
+    // Get or create the requested session (thread-safe, returns with ref count incremented)
+    currentSessionRef = ios_session_get_or_create(sessionId);
+    if (currentSessionRef == NULL) {
+        NSLog(@"[ios_system] Error: Failed to get or create session");
+        return;
+    }
+
+    // Extract session parameters pointer
+    currentSession = ios_session_get_params(currentSessionRef);
+
+    // Update session context if not already set
+    if (currentSession->context == NULL) {
+        currentSession->context = sessionId;
+    }
+
+    // Synchronize current directory with session's stored directory
+    NSFileManager *fileManager = [[NSFileManager alloc] init];
+    NSString* currentSessionDir = [NSString stringWithCString:currentSession->currentDir encoding:NSUTF8StringEncoding];
+    if (![currentSessionDir isEqualToString:[fileManager currentDirectoryPath]]) {
+        [fileManager changeCurrentDirectoryPath:currentSessionDir];
+    }
+
+    // Update standard streams to session defaults (if they're not custom streams)
+    // Note: This behavior mirrors original code, though it seems questionable
+    if (currentSession->stdin == stdin && thread_stdin == NULL) {
         currentSession->stdin = stdin;
+    }
+    if (currentSession->stdout == stdout && thread_stdout == NULL) {
         currentSession->stdout = stdout;
+    }
+    if (currentSession->stderr == stderr && thread_stderr == NULL) {
         currentSession->stderr = stderr;
     }
 }
@@ -2228,11 +2305,18 @@ void ios_setDirectoryURL(NSURL* workingDirectoryURL) {
 }
 
 void ios_closeSession(const void* sessionId) {
-    // delete information associated with current session:
-    if (sessionList == nil) return;
-    id sessionKey = @((NSUInteger)sessionId);
-    [sessionList removeObjectForKey: sessionKey];
-    currentSession = NULL;
+    // Delete information associated with session (thread-safe)
+    ios_session_manager_init();
+
+    // Release current session reference if it's the one being closed
+    if (currentSessionRef != NULL && currentSession != NULL && currentSession->context == sessionId) {
+        ios_session_release(currentSessionRef);
+        currentSessionRef = NULL;
+        currentSession = NULL;
+    }
+
+    // Mark session for deletion (will be deleted when all references released)
+    ios_session_delete(sessionId);
 }
 
 int ios_isatty(int fd) {
@@ -2729,10 +2813,15 @@ int ios_system(const char* inputCmd) {
     NSFileManager *fileManager = [[NSFileManager alloc] init];
     // NSLog(@"ios_system, stdout %d \n", thread_stdout == NULL ? 0 : fileno(thread_stdout));
     // NSLog(@"ios_system, stderr %d \n", thread_stderr == NULL ? 0 : fileno(thread_stderr));
+
+    // Ensure we have a session (thread-safe, creates default if needed)
     if (currentSession == NULL) {
-        currentSession = malloc(sizeof(sessionParameters));
-        initSessionParameters(currentSession);
+        ios_session_manager_init();
+        currentSessionRef = ios_session_get_or_create(default_session_id);
+        currentSession = ios_session_get_params(currentSessionRef);
+        currentSession->context = default_session_id;
     }
+
     currentSession->global_errno = 0;
     NSLog(@"Starting command: %s currentSession->isMainThread: %d", inputCmd, currentSession->isMainThread);
     // Don't start if the command is NULL:
@@ -3468,51 +3557,33 @@ int ios_system(const char* inputCmd) {
             // hasPrefix covers python, python3, python3.9.
             if ([commandName hasPrefix: @"python"]) {
                 // Ability to start multiple python3 scripts (required for Jupyter notebooks):
-                // start by increasing the number of the interpreter, until we're out.
-                int numInterpreter = 0;
-                if ((currentPythonInterpreter < numPythonInterpreters) && (!PythonIsRunning[currentPythonInterpreter])) {
-                    numInterpreter = currentPythonInterpreter;
-                    currentPythonInterpreter++;
+                // Use thread-safe interpreter pool with 1-second timeout
+                ios_interp_pool_init();
+
+                // Try to acquire a Python interpreter slot (1000ms timeout)
+                ios_interp_slot_handle_t* handle = ios_interp_acquire(IOS_INTERP_PYTHON, 1000);
+
+                if (handle == NULL) {
+                    // Timeout - all slots busy
+                    if (showPythonInterpreterAlert) {
+                        display_alert(@"Too many Python scripts", @"There are too many Python interpreters running at the same time. Try closing some of them.");
+                        NSLog(@"%@", @"Too many python scripts running simultaneously. Try closing some notebooks.\n");
+                        showPythonInterpreterAlert = false;
+                        currentSession->global_errno = ENOENT;
+                    }
+                    function = &too_many_scripts;
+                    functionName = @"notAValidCommand";
+                    argv[0][0] = 'x'; // prevent reinitialization in cleanup_function
                 } else {
-                    NSDate *start = [NSDate date];
-                    NSDate *now = [NSDate date];
-                    NSTimeInterval timeInterval = [now timeIntervalSinceDate:start];
-                    bool timeout = true;
-                    while (timeInterval < 1) { // keep trying for 1 second
-                        while  (numInterpreter < numPythonInterpreters) {
-                            if (PythonIsRunning[numInterpreter] == false) {
-                                timeout = false;
-                                break;
-                            }
-                            numInterpreter++;
-                        }
-                        if (!timeout) break; // need to break twice!
-                        numInterpreter = 0;
-                        now = [NSDate date];
-                        timeInterval = [now timeIntervalSinceDate:start];
+                    // Successfully acquired slot
+                    int numInterpreter = ios_interp_get_slot_number(handle);
+                    params->interp_handle = handle;
+                    params->numInterpreter = numInterpreter;  // For backward compat
+
+                    if ((numInterpreter == 0) && (strlen(argv[0]) > 7)) {
+                        // python3.x creates issues, so we truncate to 'python3'
+                        argv[0][7] = 0;
                     }
-                    if (timeout) {
-                        if (showPythonInterpreterAlert) {
-                            // Only show this alert once per session:
-                            display_alert(@"Too many Python scripts", @"There are too many Python interpreters running at the same time. Try closing some of them.");
-                            NSLog(@"%@", @"Too many python scripts running simultaneously. Try closing some notebooks.\n");
-                            showPythonInterpreterAlert = false;
-                            currentSession->global_errno = ENOENT;
-                        }
-                        function = &too_many_scripts;
-                        functionName = @"notAValidCommand";
-                        argv[0][0] = 'x'; // prevent reinitialization in cleanup_function
-                    } else {
-                        currentPythonInterpreter = numInterpreter;
-                    }
-                }
-                if ((numInterpreter == 0) && (strlen(argv[0]) > 7)) {
-                    // python3.x creates issues, so we truncate to 'python3'
-                    argv[0][7] = 0;
-                }
-                if ((numInterpreter >= 0) && (numInterpreter < numPythonInterpreters)) {
-                    params->numInterpreter = numInterpreter;
-                    PythonIsRunning[numInterpreter] = true;
                     if (numInterpreter > 0) {
                         if ([commandName isEqualToString: @"python"]) {
                             // Add space for an extra letter at the end of "python" (+1 for "A", +1 for '\0')

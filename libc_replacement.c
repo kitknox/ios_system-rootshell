@@ -16,6 +16,7 @@
 #include <dlfcn.h>  // for dlopen()/dlsym()/dlclose()
 
 #include "ios_error.h"
+#include "ios_env_manager.h"
 #undef write
 #undef fwrite
 #undef puts
@@ -277,34 +278,8 @@ inline void ios_storeThreadId(pthread_t thread) {
 }
 
 char* libc_getenv(const char* variableName) {
-    if (environment[current_pid] != NULL) {
-        if (variableName == NULL) { return NULL; }
-        // fprintf(stderr, "libc_getenv: %s\n", variableName); fflush(stderr);
-        char** envp = environment[current_pid];
-        unsigned long varNameLen = strlen(variableName);
-        if (varNameLen == 0) { return NULL; }
-        for (int i = 0; i < numVariablesSet[current_pid]; i++) {
-            if (envp[i] == NULL) { continue; }
-            if (strlen(envp[i]) < varNameLen) { continue; }
-            if (strncmp(variableName, envp[i], varNameLen) == 0) {
-                if (strlen(envp[i]) > varNameLen) {
-                    if (envp[i][varNameLen] == '=') {
-                        return envp[i] + varNameLen + 1;
-                    }
-                }
-            }
-            /*
-            char* position = strchr(envp[i],'=');
-            if (strncmp(variableName, envp[i], position - envp[i]) == 0) {
-                char* value = position + 1;
-                return value;
-            }
-             */
-        }
-        return NULL;
-    } else {
-        return getenv(variableName);
-    }
+    // Use new thread-safe per-thread environment manager
+    return ios_env_getenv(variableName);
 }
 
 extern void set_session_errno(int n);
@@ -357,7 +332,8 @@ int ios_setenv_parent(const char* variableName, const char* value, int overwrite
 }
 
 int ios_setenv(const char* variableName, const char* value, int overwrite) {
-    return ios_setenv_pid(variableName, value, overwrite, current_pid);
+    // Use new thread-safe per-thread environment manager
+    return ios_env_setenv(variableName, value, overwrite);
 }
 
 int ios_putenv(char* string) {
@@ -456,7 +432,8 @@ int ios_unsetenv_parent(const char* variableName) {
 }
 
 int ios_unsetenv(const char* variableName) {
-    return ios_unsetenv_pid(variableName, current_pid);
+    // Use new thread-safe per-thread environment manager
+    return ios_env_unsetenv(variableName);
 }
 
 
