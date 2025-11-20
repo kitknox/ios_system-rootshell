@@ -389,6 +389,7 @@ static void cleanup_function(void* parameters) {
     // This function is called when pthread_exit() or ios_kill() is called
     pthread_t current_thread = pthread_self();
     functionParameters *p = (functionParameters *) parameters;
+    NSLog(@"[cleanup_function] ENTRY: parameters=%p work_item=%p", parameters, p->work_item);
     bool backgroundCommand = p->backgroundCommand;
     char* commandName = p->argv[0];
     char* currentSessionCommandName = NULL;
@@ -556,6 +557,14 @@ static void cleanup_function(void* parameters) {
     if ((p->dlHandle != RTLD_SELF) && (p->dlHandle != RTLD_MAIN_ONLY)
         && (p->dlHandle != RTLD_DEFAULT) && (p->dlHandle != RTLD_NEXT))
         dlclose(p->dlHandle);
+
+    // Mark work item as complete BEFORE freeing parameters!
+    // This is critical when pthread_exit() is called - the worker thread won't return normally
+    if (p->work_item != NULL) {
+        NSLog(@"[cleanup_function] Marking work item %p as complete", p->work_item);
+        ios_work_complete(p->work_item, NULL);
+    }
+
     free(parameters); // This was malloc'ed in ios_system
     if (isLastThread) {
         NSLog(@"Terminating lastthread of currentSession %x lastThreadId %x pid: %d\n", current_thread, currentSession->lastThreadId, ios_currentPid());
@@ -582,19 +591,6 @@ static void cleanup_function(void* parameters) {
 
     // Cleanup per-thread environment
     ios_env_cleanup_thread();
-
-    // Mark work item as complete if present
-    // This is critical when pthread_exit() is called - the worker thread won't return normally,
-    // so we must signal completion here in the cleanup handler
-    NSLog(@"[cleanup_function] Checking work_item: %p", p->work_item);
-    if (p->work_item != NULL) {
-        NSLog(@"[cleanup_function] Marking work item %p as complete", p->work_item);
-        ios_work_complete(p->work_item, NULL);
-        // Note: Don't release here - worker thread will release, or caller will release after wait
-        // ios_work_release is only called for async commands that don't wait
-    } else {
-        NSLog(@"[cleanup_function] ERROR: work_item is NULL!");
-    }
 
     cleanup_counter--;
     NSLog(@"returning from cleanup_function, session: %p\n", currentSession->context);
@@ -662,6 +658,7 @@ static void* run_function(void* parameters) {
     // Because some commands change argv, keep a local copy for release.
     p->argv_ref = (char **)malloc(sizeof(char*) * (p->argc + 1));
     for (int i = 0; i < p->argc; i++) p->argv_ref[i] = p->argv[i];
+    NSLog(@"[run_function] About to push cleanup, p=%p parameters=%p work_item=%p", p, parameters, p->work_item);
     pthread_cleanup_push(cleanup_function, parameters);
     @try
     {
