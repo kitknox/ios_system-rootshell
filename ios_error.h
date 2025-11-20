@@ -74,6 +74,7 @@ extern int ios_executable(const char* cmd); // is this command part of the "shel
 extern int ios_system(const char* inputCmd); // execute this command (executable file or builtin command)
 extern FILE *ios_popen(const char *command, const char *type); // Execute this command and pipe the result
 extern int ios_kill(void); // kill the current running command
+extern int ios_kill_session(const void* sessionId); // kill command in specific session (thread-safe)
 extern int ios_killpid(pid_t pid, int sig); // kill the current running command
 
 extern void ios_exit(int errorCode) __dead2; // set error code and exits from the thread.

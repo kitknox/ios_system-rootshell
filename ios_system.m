@@ -2265,6 +2265,49 @@ int ios_kill(void)
     return ESRCH;
 }
 
+// Kill command in a specific session (thread-safe, works from any thread)
+int ios_kill_session(const void* sessionId) {
+    // Get the session (increments ref count)
+    ios_session_ref_t* sessionRef = ios_session_get(sessionId);
+    if (sessionRef == NULL) {
+        return ESRCH;  // Session not found
+    }
+
+    sessionParameters* session = ios_session_get_params(sessionRef);
+    int result = ESRCH;
+
+    // Read lock to access current_command_root_thread
+    ios_session_read_lock(session);
+
+    if (session->current_command_root_thread > 0) {
+        pthread_t thread = session->current_command_root_thread;
+
+        // Check if there's a custom signal handler
+        struct sigaction query_action;
+        if ((sigaction(SIGINT, NULL, &query_action) >= 0) &&
+            (query_action.sa_handler != SIG_DFL) &&
+            (query_action.sa_handler != SIG_IGN)) {
+            // Custom signal handler - just send SIGINT
+            result = pthread_kill(thread, SIGINT);
+        } else {
+            // No custom handler - check command name for special handling
+            const char* commandName = ios_progname();
+            if ((strcmp(commandName, "lua") == 0) ||
+                (strcmp(commandName, "bc") == 0) ||
+                (strcmp(commandName, "dc") == 0)) {
+                result = pthread_kill(thread, SIGINT);
+            } else {
+                result = pthread_cancel(thread);
+            }
+        }
+    }
+
+    ios_session_read_unlock(session);
+    ios_session_release(sessionRef);
+
+    return result;
+}
+
 extern pthread_t ios_getThreadId(pid_t pid);
 int ios_killpid(pid_t pid, int sig) {
     if (ios_getThreadId(pid) > 0) {
