@@ -548,6 +548,34 @@ bool ios_work_is_complete(ios_work_item_t* item) {
 }
 
 /**
+ * Mark work item as completed
+ * Called from cleanup handlers when pthread_exit is used
+ */
+void ios_work_complete(ios_work_item_t* item, void* result) {
+    if (item == NULL) {
+        return;
+    }
+
+    fprintf(stderr, "[ios_work_complete] Marking work item %p as WORK_COMPLETED with result %p\n",
+            item, result);
+
+    pthread_mutex_lock(&item->mutex);
+
+    // Only complete if currently executing (not already completed/cancelled)
+    if (atomic_load(&item->state) == WORK_EXECUTING) {
+        item->result = result;
+        atomic_store(&item->state, WORK_COMPLETED);
+        fprintf(stderr, "[ios_work_complete] Broadcasting completion for work item %p\n", item);
+        pthread_cond_broadcast(&item->cond);
+    } else {
+        fprintf(stderr, "[ios_work_complete] Work item %p already in state %d, not completing\n",
+                item, atomic_load(&item->state));
+    }
+
+    pthread_mutex_unlock(&item->mutex);
+}
+
+/**
  * Cancel work (only if still pending)
  */
 bool ios_work_cancel(ios_work_item_t* item) {

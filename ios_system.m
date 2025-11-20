@@ -583,10 +583,14 @@ static void cleanup_function(void* parameters) {
     // Cleanup per-thread environment
     ios_env_cleanup_thread();
 
-    // Release work item if present (for async/background commands)
+    // Mark work item as complete if present
+    // This is critical when pthread_exit() is called - the worker thread won't return normally,
+    // so we must signal completion here in the cleanup handler
     if (p->work_item != NULL) {
-        ios_work_release(p->work_item);
-        p->work_item = NULL;
+        NSLog(@"Marking work item as complete from cleanup_function");
+        ios_work_complete(p->work_item, NULL);
+        // Note: Don't release here - worker thread will release, or caller will release after wait
+        // ios_work_release is only called for async commands that don't wait
     }
 
     cleanup_counter--;

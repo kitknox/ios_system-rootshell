@@ -177,6 +177,15 @@ bool ios_work_cancel(ios_work_item_t* item);
 void ios_work_release(ios_work_item_t* item);
 
 /**
+ * Mark work item as completed
+ * Internal use only - called from cleanup handlers when pthread_exit is used
+ *
+ * @param item Work item handle
+ * @param result Result to store
+ */
+void ios_work_complete(ios_work_item_t* item, void* result);
+
+/**
  * Wait for all pending work to complete
  * Blocks new submissions while draining
  *
