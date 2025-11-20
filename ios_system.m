@@ -3992,23 +3992,15 @@ int ios_system(const char* inputCmd) {
                 if ([commandName isEqualToString: @"dash"]) {
                     params->storeRootThread = false;
                 }
-                bool commandOperatesOnFiles = ([commandStructure[3] isEqualToString:@"file"] ||
-                                               [commandStructure[3] isEqualToString:@"directory"] ||
-                                               params->isPipeOut || params->isPipeErr);
-                NSString* currentPath = [fileManager currentDirectoryPath];
-                commandOperatesOnFiles &= (currentPath != nil);
-                if (commandOperatesOnFiles) {
-                    // Send a signal to the system that we're going to change the current directory:
-                    NSURL* currentURL = [NSURL fileURLWithPath:currentPath];
-                    NSFileCoordinator *fileCoordinator =  [[NSFileCoordinator alloc] initWithFilePresenter:nil];
-                    [fileCoordinator coordinateWritingItemAtURL:currentURL options:0 error:NULL byAccessor:^(NSURL *currentURL) {
-                        currentSession->isMainThread = false;
+                // NSFileCoordinator removed - it was serializing all file commands
+                // In concurrent execution, each session manages its own directory
+                currentSession->isMainThread = false;
 
-                        // Initialize thread pool (lazy, thread-safe)
-                        pthread_once(&pool_init_once, init_command_pool);
+                // Initialize thread pool (lazy, thread-safe)
+                pthread_once(&pool_init_once, init_command_pool);
 
-                        // Submit work to thread pool
-                        ios_work_item_t* work = ios_thread_pool_submit(
+                // Submit work to thread pool
+                ios_work_item_t* work = ios_thread_pool_submit(
                             g_command_pool,
                             run_function,
                             params,
@@ -4018,59 +4010,23 @@ int ios_system(const char* inputCmd) {
                         if (work == NULL) {
                             NSLog(@"[ios_system] ERROR: Failed to submit command to thread pool");
                             currentSession->isMainThread = true;
-                            return;
+                            return currentSession->global_errno;
                         }
 
                         // Note: work_item is now set by run_function via TLS, not here (avoids race)
 
-                        // Wait for this process to finish if joinMainThread is set:
-						if (joinMainThread) {
-							ios_work_wait(work, NULL);
-							// If there are auxiliary process, also wait for them:
-							if (currentSession->lastThreadId > 0) pthread_join(currentSession->lastThreadId, NULL);
-							currentSession->lastThreadId = 0;
-							currentSession->current_command_root_thread = 0;
-							ios_work_release(work);
-						}
-						// else: work item runs asynchronously, will be released in cleanup
-
-                        currentSession->isMainThread = true;
-                    }];
-                } else {
-                    currentSession->isMainThread = false;
-
-                    // Initialize thread pool (lazy, thread-safe)
-                    pthread_once(&pool_init_once, init_command_pool);
-
-                    // Submit work to thread pool
-                    ios_work_item_t* work = ios_thread_pool_submit(
-                        g_command_pool,
-                        run_function,
-                        params,
-                        currentSession->isMainThread ? IOS_PRIORITY_HIGH : IOS_PRIORITY_NORMAL
-                    );
-
-                    if (work == NULL) {
-                        NSLog(@"[ios_system] ERROR: Failed to submit command to thread pool");
-                        currentSession->isMainThread = true;
-                        return currentSession->global_errno;
-                    }
-
-                    // Note: work_item is now set by run_function via TLS, not here (avoids race)
-
-                    // Wait for this process to finish:
-					if (joinMainThread) {
-						ios_work_wait(work, NULL);
-						// If there are auxiliary process, also wait for them:
-						if (currentSession->lastThreadId > 0) pthread_join(currentSession->lastThreadId, NULL);
-						currentSession->lastThreadId = 0;
-						currentSession->current_command_root_thread = 0;
-						ios_work_release(work);
-					}
-					// else: work item runs asynchronously, will be released in cleanup
-
-                    currentSession->isMainThread = true;
+                // Wait for this process to finish if joinMainThread is set:
+                if (joinMainThread) {
+                    ios_work_wait(work, NULL);
+                    // If there are auxiliary process, also wait for them:
+                    if (currentSession->lastThreadId > 0) pthread_join(currentSession->lastThreadId, NULL);
+                    currentSession->lastThreadId = 0;
+                    currentSession->current_command_root_thread = 0;
+                    ios_work_release(work);
                 }
+                // else: work item runs asynchronously, will be released in cleanup
+
+                currentSession->isMainThread = true;
             } else {
                 NSLog(@"Starting command %s, global_errno= %d\n", command, currentSession->global_errno);
                 // Don't send signal if not in main thread. Also, don't join threads.
