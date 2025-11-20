@@ -11,6 +11,7 @@
 #include "ios_session_manager.h"
 #include "ios_env_manager.h"
 #include "ios_interpreter_pool.h"
+#include "ios_thread_pool.h"
 
 // ios_system(cmd): Executes the command in "cmd". The goal is to be a drop-in replacement for system(), as much as possible.
 // We assume cmd is the command. If vim has prepared '/bin/sh -c "(command -arguments) < inputfile > outputfile",
@@ -46,6 +47,16 @@ static NSString* ios_bookmarkDictionaryName = @"bookmarkNames";
 static struct rlimit limitFilesOpen;
 extern void display_alert(NSString* title, NSString* message);
 
+// Global thread pool for command execution
+static ios_thread_pool_t* g_command_pool = NULL;
+static pthread_once_t pool_init_once = PTHREAD_ONCE_INIT;
+
+static void init_command_pool(void) {
+    g_command_pool = ios_thread_pool_create_default();
+    if (g_command_pool == NULL) {
+        NSLog(@"[ios_system] ERROR: Failed to create command thread pool");
+    }
+}
 
 extern __thread int    __db_getopt_reset;
 __thread FILE* thread_stdin;
@@ -382,6 +393,7 @@ typedef struct _functionParameters {
     bool backgroundCommand;
     int  numInterpreter;                          // Legacy: slot number for backward compat
     ios_interp_slot_handle_t* interp_handle;     // New: thread-safe interpreter slot handle
+    ios_work_item_t* work_item;                  // Thread pool work item handle
     bool storeRootThread;
     sessionParameters* session;
 } functionParameters;
@@ -588,6 +600,12 @@ static void cleanup_function(void* parameters) {
 
     // Cleanup per-thread environment
     ios_env_cleanup_thread();
+
+    // Release work item if present (for async/background commands)
+    if (p->work_item != NULL) {
+        ios_work_release(p->work_item);
+        p->work_item = NULL;
+    }
 
     cleanup_counter--;
     NSLog(@"returning from cleanup_function, session: %s\n", (char*)currentSession->context);
@@ -3884,52 +3902,106 @@ int ios_system(const char* inputCmd) {
                     NSFileCoordinator *fileCoordinator =  [[NSFileCoordinator alloc] initWithFilePresenter:nil];
                     [fileCoordinator coordinateWritingItemAtURL:currentURL options:0 error:NULL byAccessor:^(NSURL *currentURL) {
                         currentSession->isMainThread = false;
-                        volatile pthread_t _tid = NULL;
-                        pthread_create(&_tid, NULL, run_function, params);
-                        while (_tid == NULL) { }
-                        // ios_storeThreadId(_tid);
-                        if (currentSession->mainThreadId == NULL) currentSession->mainThreadId = _tid;
-                        // Wait for this process to finish:
+
+                        // Initialize thread pool (lazy, thread-safe)
+                        pthread_once(&pool_init_once, init_command_pool);
+
+                        // Submit work to thread pool
+                        ios_work_item_t* work = ios_thread_pool_submit(
+                            g_command_pool,
+                            run_function,
+                            params,
+                            currentSession->isMainThread ? IOS_PRIORITY_HIGH : IOS_PRIORITY_NORMAL
+                        );
+
+                        if (work == NULL) {
+                            NSLog(@"[ios_system] ERROR: Failed to submit command to thread pool");
+                            currentSession->isMainThread = true;
+                            return;
+                        }
+
+                        params->work_item = work;
+
+                        // Wait for this process to finish if joinMainThread is set:
 						if (joinMainThread) {
-							pthread_join(_tid, NULL);
+							ios_work_wait(work, NULL);
 							// If there are auxiliary process, also wait for them:
 							if (currentSession->lastThreadId > 0) pthread_join(currentSession->lastThreadId, NULL);
 							currentSession->lastThreadId = 0;
 							currentSession->current_command_root_thread = 0;
-						} else {
-							pthread_detach(_tid); // a thread must be either joined or detached
+							ios_work_release(work);
 						}
+						// else: work item runs asynchronously, will be released in cleanup
+
                         currentSession->isMainThread = true;
                     }];
                 } else {
                     currentSession->isMainThread = false;
-                    volatile pthread_t _tid = NULL;
-                    pthread_create(&_tid, NULL, run_function, params);
-                    while (_tid == NULL) { }
-                    // ios_storeThreadId(_tid);
-                    if (currentSession->mainThreadId == NULL) currentSession->mainThreadId = _tid;
+
+                    // Initialize thread pool (lazy, thread-safe)
+                    pthread_once(&pool_init_once, init_command_pool);
+
+                    // Submit work to thread pool
+                    ios_work_item_t* work = ios_thread_pool_submit(
+                        g_command_pool,
+                        run_function,
+                        params,
+                        currentSession->isMainThread ? IOS_PRIORITY_HIGH : IOS_PRIORITY_NORMAL
+                    );
+
+                    if (work == NULL) {
+                        NSLog(@"[ios_system] ERROR: Failed to submit command to thread pool");
+                        currentSession->isMainThread = true;
+                        return currentSession->global_errno;
+                    }
+
+                    params->work_item = work;
+
                     // Wait for this process to finish:
 					if (joinMainThread) {
-						pthread_join(_tid, NULL);
+						ios_work_wait(work, NULL);
 						// If there are auxiliary process, also wait for them:
 						if (currentSession->lastThreadId > 0) pthread_join(currentSession->lastThreadId, NULL);
 						currentSession->lastThreadId = 0;
 						currentSession->current_command_root_thread = 0;
-					} else {
-						pthread_detach(_tid); // a thread must be either joined or detached
+						ios_work_release(work);
 					}
+					// else: work item runs asynchronously, will be released in cleanup
+
                     currentSession->isMainThread = true;
                 }
             } else {
                 NSLog(@"Starting command %s, global_errno= %d\n", command, currentSession->global_errno);
                 // Don't send signal if not in main thread. Also, don't join threads.
-                volatile pthread_t _tid_local = NULL;
-                pthread_create(&_tid_local, NULL, run_function, params);
-                // The last command on the command line (with multiple pipes) will be created first
-                while (_tid_local == NULL) { }; // Wait until thread has actually started
-                // fprintf(stderr, "Started thread = %x\n", _tid_local);
-                if (currentSession->lastThreadId == 0) currentSession->lastThreadId = _tid_local; // will be joined later
-                else pthread_detach(_tid_local); // a thread must be either joined or detached.
+
+                // Initialize thread pool (lazy, thread-safe)
+                pthread_once(&pool_init_once, init_command_pool);
+
+                // Submit work to thread pool (lower priority for piped/background commands)
+                ios_work_item_t* work = ios_thread_pool_submit(
+                    g_command_pool,
+                    run_function,
+                    params,
+                    params->backgroundCommand ? IOS_PRIORITY_LOW : IOS_PRIORITY_NORMAL
+                );
+
+                if (work == NULL) {
+                    NSLog(@"[ios_system] ERROR: Failed to submit piped/background command to thread pool");
+                    return currentSession->global_errno;
+                }
+
+                params->work_item = work;
+
+                // For piped commands: first command created will be joined later
+                // Other commands run detached
+                if (currentSession->lastThreadId == 0) {
+                    // This is the last command in a pipe, will be joined later
+                    // Store work item so we can wait for it
+                    // Note: pthread_t lastThreadId is still used for compatibility
+                } else {
+                    // Intermediate command in pipe, runs detached
+                    // Work item will be released in cleanup_function
+                }
             }
         } else {
             fprintf(params->stderr, "%s: command not found\n", argv[0]);
