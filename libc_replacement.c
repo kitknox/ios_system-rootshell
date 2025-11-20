@@ -188,7 +188,7 @@ static char previousDirectory[IOS_MAX_THREADS][MAXPATHLEN];
 static int previousPid[IOS_MAX_THREADS];
 
 static int pid_overflow = 0;
-static pid_t current_pid = 0;
+static __thread pid_t current_pid = 0;
 // We need to lock current_pid during operations
 pthread_mutex_t pid_mtx = PTHREAD_MUTEX_INITIALIZER;
 _Atomic(int) cleanup_counter = 0;
