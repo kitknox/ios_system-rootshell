@@ -16,6 +16,9 @@
 #define DEFAULT_MAX_QUEUE_SIZE 256
 #define DEFAULT_THREAD_NAME "ios_worker"
 
+// Thread-local storage for current work item (accessible from work functions)
+static __thread ios_work_item_t* current_work_item = NULL;
+
 // Work item states
 typedef enum {
     WORK_PENDING,
@@ -183,7 +186,13 @@ static void* worker_thread_main(void* arg) {
         atomic_fetch_add(&pool->active_workers, 1);
         atomic_store(&item->state, WORK_EXECUTING);
 
+        // Store current work item in TLS so run_function can access it
+        current_work_item = item;
+
         void* result = item->work_fn(item->arg);
+
+        // Clear TLS
+        current_work_item = NULL;
 
         atomic_fetch_sub(&pool->active_workers, 1);
 
@@ -532,6 +541,14 @@ bool ios_work_is_complete(ios_work_item_t* item) {
 
     work_state_t state = atomic_load(&item->state);
     return (state == WORK_COMPLETED || state == WORK_CANCELLED);
+}
+
+/**
+ * Get current work item (from thread-local storage)
+ * Only valid when called from within a work function
+ */
+ios_work_item_t* ios_work_get_current(void) {
+    return current_work_item;
 }
 
 /**

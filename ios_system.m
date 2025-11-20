@@ -620,6 +620,12 @@ void crash_handler(int sig) {
 
 static void* run_function(void* parameters) {
     functionParameters *p = (functionParameters *) parameters;
+
+    // Get current work item from TLS and store in params
+    // This must be done first, before any code that might call exit/pthread_exit
+    p->work_item = ios_work_get_current();
+    NSLog(@"[run_function] Got work_item from TLS: %p", p->work_item);
+
     NSLog(@"Storing thread_id: %x pid: %d isPipeOut: %x isPipeErr: %x stdin %d stdout %d stderr %d command= %s\n", pthread_self(), ios_currentPid(), p->isPipeOut, p->isPipeErr,
           (p->stdin == nil) ? -1 : fileno(p->stdin),
           (p->stdout == nil) ? -1 : fileno(p->stdout),
@@ -3972,7 +3978,7 @@ int ios_system(const char* inputCmd) {
                             return;
                         }
 
-                        params->work_item = work;
+                        // Note: work_item is now set by run_function via TLS, not here (avoids race)
 
                         // Wait for this process to finish if joinMainThread is set:
 						if (joinMainThread) {
@@ -4007,7 +4013,7 @@ int ios_system(const char* inputCmd) {
                         return currentSession->global_errno;
                     }
 
-                    params->work_item = work;
+                    // Note: work_item is now set by run_function via TLS, not here (avoids race)
 
                     // Wait for this process to finish:
 					if (joinMainThread) {
@@ -4042,7 +4048,7 @@ int ios_system(const char* inputCmd) {
                     return currentSession->global_errno;
                 }
 
-                params->work_item = work;
+                // Note: work_item is now set by run_function via TLS, not here (avoids race)
 
                 // For piped commands: first command created will be joined later
                 // Other commands run detached

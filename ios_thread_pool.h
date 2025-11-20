@@ -177,6 +177,14 @@ bool ios_work_cancel(ios_work_item_t* item);
 void ios_work_release(ios_work_item_t* item);
 
 /**
+ * Get current work item
+ * Only valid when called from within a work function
+ *
+ * @return Current work item or NULL if not in work context
+ */
+ios_work_item_t* ios_work_get_current(void);
+
+/**
  * Mark work item as completed
  * Internal use only - called from cleanup handlers when pthread_exit is used
  *
