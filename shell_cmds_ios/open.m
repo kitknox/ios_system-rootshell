@@ -11,6 +11,31 @@
 
 #import <UIKit/UIKit.h>
 
+// Helper function to get key window compatible with iOS 13+ and visionOS
+UIWindow *__get_key_window(void) {
+    // Use window scene API for iOS 13+ and visionOS
+    NSSet<UIScene *> *connectedScenes = [UIApplication sharedApplication].connectedScenes;
+    for (UIScene *scene in connectedScenes) {
+        if ([scene isKindOfClass:[UIWindowScene class]]) {
+            UIWindowScene *windowScene = (UIWindowScene *)scene;
+            if (windowScene.activationState == UISceneActivationStateForegroundActive) {
+                // On iOS 15+, UIWindowScene has keyWindow property
+                if (@available(iOS 15.0, *)) {
+                    if (windowScene.keyWindow) {
+                        return windowScene.keyWindow;
+                    }
+                }
+                // For iOS 13-14, find the key window in the scene's windows
+                for (UIWindow *window in windowScene.windows) {
+                    if (window.isKeyWindow) {
+                        return window;
+                    }
+                }
+            }
+        }
+    }
+    return nil;
+}
 
 NSArray<NSString *> *__known_browsers(void) {
   // TODO: @"opera" opera-http(s): doesn't work
@@ -98,9 +123,15 @@ int openurl_main(int argc, char *argv[]) {
   
   dispatch_async(dispatch_get_main_queue(), ^{
     NSURL *browserAppURL = __browser_app_url(locationURL);
+#if !TARGET_OS_VISION
     [[UIApplication sharedApplication] openURL:browserAppURL ?: locationURL
                                        options:@{}
                              completionHandler:nil];
+#else
+    // UIApplication openURL is not available on visionOS
+    // visionOS apps should use NSWorkspace or other appropriate APIs
+    fprintf(thread_stderr, "openURL is not supported on visionOS\n");
+#endif
   });
   
   
@@ -125,13 +156,13 @@ int open_main(int argc, char *argv[]) {
   
   if (fileURL && [NSFileManager.defaultManager fileExistsAtPath:fileURL.path]) {
     dispatch_async(dispatch_get_main_queue(), ^{
-      
-      UIWindow *window = [UIApplication sharedApplication].keyWindow;
-      
+
+      UIWindow *window = __get_key_window();
+
       if (!window) {
         fputs("Cannot find a window. This command require an UI for opening files.\n", thread_stderr);
       }
-      
+
       UIViewController *topController = window.rootViewController;
       
       while (topController.presentedViewController) {
@@ -156,13 +187,13 @@ int open_main(int argc, char *argv[]) {
 
 void display_alert(NSString* title, NSString* message) {
   dispatch_async(dispatch_get_main_queue(), ^{
-    
-    UIWindow *window = [UIApplication sharedApplication].keyWindow;
-    
+
+    UIWindow *window = __get_key_window();
+
     if (!window) {
       return;
     }
-    
+
     UIViewController *topController = window.rootViewController;
     
     while (topController.presentedViewController) {
