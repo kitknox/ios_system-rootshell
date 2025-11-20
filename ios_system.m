@@ -378,11 +378,13 @@ typedef struct _functionParameters {
     ios_work_item_t* work_item;                  // Thread pool work item handle
     bool storeRootThread;
     sessionParameters* session;
+    pid_t pid;                                    // Thread-local pid for this command
 } functionParameters;
 
 extern pthread_mutex_t pid_mtx;
 extern _Atomic(int) cleanup_counter;
 extern void ios_releaseBackgroundThread(pthread_t thread);
+extern void ios_setCurrentPid(pid_t pid);
 extern void startedPreparingWebAssemblyCommand(void);
 
 static void cleanup_function(void* parameters) {
@@ -621,6 +623,9 @@ static void* run_function(void* parameters) {
     // This must be done first, before any code that might call exit/pthread_exit
     p->work_item = ios_work_get_current();
     NSLog(@"[run_function] Got work_item from TLS: %p", p->work_item);
+
+    // Set thread-local pid from parameters (passed from calling thread)
+    ios_setCurrentPid(p->pid);
 
     NSLog(@"Storing thread_id: %x pid: %d isPipeOut: %x isPipeErr: %x stdin %d stdout %d stderr %d command= %s\n", pthread_self(), ios_currentPid(), p->isPipeOut, p->isPipeErr,
           (p->stdin == nil) ? -1 : fileno(p->stdin),
@@ -3947,6 +3952,7 @@ int ios_system(const char* inputCmd) {
             params->isPipeErr = (params->stderr != thread_stderr) && (params->stderr != params->stdout);
             params->storeRootThread = false;
             // params->session = currentSession;
+            params->pid = ios_currentPid(); // Pass pid to worker thread
             // Before starting, do we have enough file descriptors available?
             int numFileDescriptorsOpen = 0;
             bool debugPath = false; // to understand where the file descr was allocated

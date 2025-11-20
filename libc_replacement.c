@@ -552,6 +552,10 @@ pid_t ios_currentPid(void) {
     return current_pid;
 }
 
+void ios_setCurrentPid(pid_t pid) {
+    current_pid = pid;
+}
+
 // Note to self: do not redefine getpid() unless you have a way to make it consistent even when a "process" starts a new thread.
 // 0MQ and asyncio rely on this.
 pid_t fork(void) { return ios_nextAvailablePid(); } // increases current_pid by 1.

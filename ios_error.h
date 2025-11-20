@@ -99,6 +99,7 @@ extern const char* ios_progname(void);
 extern pid_t ios_fork(void);
 extern void ios_waitpid(pid_t pid);
 extern pid_t ios_full_waitpid(pid_t pid, int *stat_loc, int options);
+extern void ios_setCurrentPid(pid_t pid);
 
 // Catch signal definition:
 extern int canSetSignal(void);
