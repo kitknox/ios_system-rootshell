@@ -202,6 +202,7 @@ static bool curlIsRunning = false;
 
 // pointers for sh sessions:
 char* sh_session = "sh_session";
+char* inExtension_session = "inExtension";
 
 // replace system-provided exit() by our own:
 void ios_exit(int n) {
@@ -234,8 +235,7 @@ int canSetSignal() {
     if (currentSession == NULL) {
         return 1;
     }
-    char* sessionId = (char*)currentSession->context;
-    if (strcmp(sessionId, "inExtension") == 0) {
+    if (currentSession->context == inExtension_session) {
         return 0;
     }
     return 1;
@@ -2274,20 +2274,17 @@ int ios_killpid(pid_t pid, int sig) {
 }
 
 void ios_switchSession(const void* sessionId) {
-    char* sessionName = (char*) sessionId;
-    // NSLog(@"Switching to session: %s\n", sessionName);
-
     // Thread-safe session switching using new session manager
 
     // Check if we're already in the correct session (fast path)
     if ((currentSession != nil) && (parentSession != nil)) {
-        if ((currentSession->context == sh_session) && (parentSession->context == sessionName)) {
+        if ((currentSession->context == sh_session) && (parentSession->context == sessionId)) {
             // If we are running a sh_session inside the requested sessionId, there is no need to change:
             return;
         }
     }
 
-    if ((currentSession != nil) && (currentSession->context != NULL) && (strcmp(currentSession->context, sessionName) == 0)) {
+    if ((currentSession != nil) && (currentSession->context != NULL) && (currentSession->context == sessionId)) {
         // Already inside this session: do nothing
         return;
     }
