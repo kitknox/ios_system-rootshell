@@ -2451,6 +2451,10 @@ void ios_setStreams(FILE* _stdin, FILE* _stdout, FILE* _stderr) {
     currentSession->stdin = _stdin;
     currentSession->stdout = _stdout;
     currentSession->stderr = _stderr;
+    // Also set thread-local streams so ios_system() can read them when setting up params
+    thread_stdin = _stdin;
+    thread_stdout = _stdout;
+    thread_stderr = _stderr;
 }
 
 void ios_settty(FILE* _tty) {
