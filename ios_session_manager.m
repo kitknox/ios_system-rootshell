@@ -4,6 +4,7 @@
  */
 
 #include "ios_session_manager.h"
+#include "ios_env_manager.h"
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -65,6 +66,9 @@ static void session_table_init(void) {
     if (g_session_table.initialized) {
         return;
     }
+
+    // Initialize environment manager first
+    ios_env_manager_init();
 
     pthread_mutex_init(&g_session_table.init_mutex, NULL);
 

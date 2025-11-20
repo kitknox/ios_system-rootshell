@@ -124,6 +124,10 @@ static void env_thread_destructor(void* arg) {
  * Get current thread's environment
  */
 static thread_env_t* env_get_current(void) {
+    // Return NULL if manager not initialized to avoid garbage from uninitialized env_key
+    if (!env_manager_initialized) {
+        return NULL;
+    }
     return (thread_env_t*)pthread_getspecific(env_key);
 }
 
