@@ -32,6 +32,7 @@
 #include <libgen.h> // for basename()
 #include <dlfcn.h>  // for dlopen()/dlsym()/dlclose()
 #include <glob.h>   // for wildcard expansion
+#include <setjmp.h> // for setjmp/longjmp in worker threads
 // Sideloading: when you compile yourself, as opposed to uploading on the app store
 // If true, all commands are enabled + debug messages if dylib not found.
 // If false, you get a smaller set, but compliance with AppStore rules.
@@ -65,6 +66,10 @@ __thread FILE* thread_stdin;
 __thread FILE* thread_stdout;
 __thread FILE* thread_stderr;
 __thread void* thread_context;
+
+// Thread pool exit handling: use longjmp instead of pthread_exit to preserve worker threads
+__thread jmp_buf exit_jmp_buf;
+__thread int in_worker_thread = 0;
 
 FILE* ios_stdin(void) {
     return thread_stdin;
@@ -209,7 +214,14 @@ void ios_exit(int n) {
     if (currentSession != NULL) {
         currentSession->global_errno = n;
     }
-    pthread_exit(NULL);
+
+    // If we're in a thread pool worker, use longjmp to return from command
+    // without killing the worker thread. Otherwise use pthread_exit for legacy behavior.
+    if (in_worker_thread) {
+        longjmp(exit_jmp_buf, n != 0 ? n : 1);
+    } else {
+        pthread_exit(NULL);
+    }
 }
 
 void set_session_errno(int n) {
@@ -665,26 +677,33 @@ static void* run_function(void* parameters) {
     for (int i = 0; i < p->argc; i++) p->argv_ref[i] = p->argv[i];
     NSLog(@"[run_function] About to push cleanup, p=%p parameters=%p work_item=%p", p, parameters, p->work_item);
     pthread_cleanup_push(cleanup_function, parameters);
-    @try
-    {
-        int retval = p->function(p->argc, p->argv);
-        if (currentSession != nil) currentSession->global_errno = retval;
+
+    // Set up longjmp target for ios_exit() to preserve worker thread
+    in_worker_thread = 1;
+    int exit_code = setjmp(exit_jmp_buf);
+
+    if (exit_code == 0) {
+        // Normal execution path: run the command
+        @try
+        {
+            int retval = p->function(p->argc, p->argv);
+            if (currentSession != nil) currentSession->global_errno = retval;
+        }
+        @catch (NSException *exception)
+        {
+          // Print exception information.
+          NSLog( @"NSException caught" );
+          NSLog( @"Name: %@", exception.name);
+          NSLog( @"Reason: %@", exception.reason );
+            fprintf(thread_stderr, "Command %s was interrupted because it triggered a system exception: %s: %s\n", p->argv[0], exception.name.UTF8String, exception.reason.UTF8String);
+        }
     }
-    @catch (NSException *exception)
-    {
-      // Print exception information.
-      NSLog( @"NSException caught" );
-      NSLog( @"Name: %@", exception.name);
-      NSLog( @"Reason: %@", exception.reason );
-        fprintf(thread_stderr, "Command %s was interrupted because it triggered a system exception: %s: %s\n", p->argv[0], exception.name.UTF8String, exception.reason.UTF8String);
-      return NULL;
-    }
-    @finally
-    {
-      // Cleanup, in both success and fail cases
-        pthread_cleanup_pop(1);
-        return NULL;
-    }
+    // If exit_code != 0, we got here via longjmp from ios_exit()
+    // errno was already set by ios_exit(), just cleanup and return
+
+    in_worker_thread = 0;
+    pthread_cleanup_pop(1);  // Always call cleanup
+    return NULL;
 }
 
 static NSString* miniRoot = nil; // limit operations to below a certain directory (~, usually).
