@@ -9,7 +9,8 @@
 #include <assert.h>
 #include <unistd.h>
 #include <limits.h>  // For NAME_MAX
-#include <Foundation/Foundation.h>
+#include <stdatomic.h>
+#import <Foundation/Foundation.h>
 
 // Hash table implementation for concurrent session storage
 #define SESSION_HASH_TABLE_SIZE 256  // Power of 2 for fast modulo
@@ -73,8 +74,7 @@ static void session_table_init(void) {
 
         pthread_rwlockattr_t attr;
         pthread_rwlockattr_init(&attr);
-        // Prefer readers for better concurrent read performance
-        pthread_rwlockattr_setkind_np(&attr, PTHREAD_RWLOCK_PREFER_READER_NP);
+        // Note: pthread_rwlockattr_setkind_np is Linux-specific, not needed on macOS/iOS
         pthread_rwlock_init(&g_session_table.bucket_locks[i], &attr);
         pthread_rwlockattr_destroy(&attr);
     }
@@ -110,7 +110,7 @@ void ios_session_manager_shutdown(void) {
 
     if (atomic_load(&g_session_table.total_refs) > 0) {
         NSLog(@"[ios_session_manager] Warning: Shutdown with %d outstanding references",
-              atomic_load(&g_session_table.total_refs));
+              (int)atomic_load(&g_session_table.total_refs));
     }
 
     // Destroy all sessions and cleanup hash table
@@ -242,7 +242,7 @@ ios_session_ref_t* ios_session_get_or_create(const void* sessionId) {
     entry = session_table_insert_locked(sessionId, bucket_idx);
     if (!entry) {
         pthread_rwlock_unlock(&g_session_table.bucket_locks[bucket_idx]);
-        NSLog(@"[ios_session_manager] Error: Failed to allocate session");
+        // NSLog(@"[ios_session_manager] Error: Failed to allocate session");
         return NULL;
     }
 

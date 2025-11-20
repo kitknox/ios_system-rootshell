@@ -9,7 +9,8 @@
 #include <errno.h>
 #include <time.h>
 #include <dispatch/dispatch.h>
-#include <Foundation/Foundation.h>
+#include <stdatomic.h>
+#include <stdio.h>
 
 // Default pool sizes
 #define DEFAULT_PYTHON_SLOTS 6
@@ -119,8 +120,7 @@ static int interp_pool_init_type(ios_interpreter_type_t type, int max_slots) {
     pool->initialized = true;
     pthread_mutex_unlock(&pool->config_mutex);
 
-    NSLog(@"[ios_interp_pool] Initialized %s pool with %d slots",
-          ios_interp_type_name(type), max_slots);
+    fprintf(stderr, "[ios_interp_pool] Initialized %s pool with %d slots\n",           ios_interp_type_name(type), max_slots);
     return 0;
 }
 
@@ -164,8 +164,7 @@ int ios_interp_pool_configure(ios_interpreter_type_t type, int max_slots) {
 
     // If already initialized, can't reconfigure
     if (pool->initialized) {
-        NSLog(@"[ios_interp_pool] Warning: %s pool already initialized, cannot reconfigure",
-              ios_interp_type_name(type));
+    fprintf(stderr, "[ios_interp_pool] Warning: %s pool already initialized, cannot reconfigure\n",           ios_interp_type_name(type));
         return -1;
     }
 
@@ -234,7 +233,7 @@ ios_interp_slot_handle_t* ios_interp_acquire(ios_interpreter_type_t type, int ti
     ios_interp_pool_init();
 
     if (type >= IOS_INTERP_MAX) {
-        NSLog(@"[ios_interp_pool] Error: Invalid interpreter type %d", type);
+           fprintf(stderr, "           \n", type);
         return NULL;
     }
 
@@ -244,7 +243,7 @@ ios_interp_slot_handle_t* ios_interp_acquire(ios_interpreter_type_t type, int ti
     if (!pool->initialized) {
         int default_size = get_default_pool_size(type);
         if (interp_pool_init_type(type, default_size) != 0) {
-            NSLog(@"[ios_interp_pool] Error: Failed to initialize %s pool", ios_interp_type_name(type));
+           fprintf(stderr, "           \n", ios_interp_type_name(type));
             return NULL;
         }
     }
@@ -267,8 +266,7 @@ ios_interp_slot_handle_t* ios_interp_acquire(ios_interpreter_type_t type, int ti
 
     if (result != 0) {
         // Timeout
-        NSLog(@"[ios_interp_pool] Timeout acquiring %s slot (timeout=%dms)",
-              ios_interp_type_name(type), timeout_ms);
+    fprintf(stderr, "[ios_interp_pool] Timeout acquiring %s slot (timeout=%dms)\n",           ios_interp_type_name(type), timeout_ms);
         return NULL;
     }
 
@@ -277,8 +275,7 @@ ios_interp_slot_handle_t* ios_interp_acquire(ios_interpreter_type_t type, int ti
 
     if (slot_num < 0) {
         // This should never happen (semaphore guarantees a slot is available)
-        NSLog(@"[ios_interp_pool] ERROR: Semaphore passed but no free slot for %s",
-              ios_interp_type_name(type));
+    fprintf(stderr, "[ios_interp_pool] ERROR: Semaphore passed but no free slot for %s\n",           ios_interp_type_name(type));
         dispatch_semaphore_signal(pool->semaphore);  // Release semaphore
         return NULL;
     }
@@ -288,8 +285,7 @@ ios_interp_slot_handle_t* ios_interp_acquire(ios_interpreter_type_t type, int ti
     handle->type = type;
     handle->slot_number = slot_num;
 
-    NSLog(@"[ios_interp_pool] Acquired %s slot %d (thread=%p)",
-          ios_interp_type_name(type), slot_num, pthread_self());
+    fprintf(stderr, "[ios_interp_pool] Acquired %s slot %d (thread=%p)\n",           ios_interp_type_name(type), slot_num, pthread_self());
 
     return handle;
 }
@@ -345,7 +341,7 @@ void ios_interp_release(ios_interp_slot_handle_t* handle) {
     interpreter_pool_t* pool = &g_pools[handle->type];
 
     if (!pool->initialized) {
-        NSLog(@"[ios_interp_pool] Warning: Releasing slot from uninitialized pool");
+           fprintf(stderr, "           \n");
         free(handle);
         return;
     }
@@ -361,8 +357,7 @@ void ios_interp_release(ios_interp_slot_handle_t* handle) {
         }
     }
 
-    NSLog(@"[ios_interp_pool] Released %s slot %d (thread=%p)",
-          ios_interp_type_name(handle->type), handle->slot_number, pthread_self());
+    fprintf(stderr, "[ios_interp_pool] Released %s slot %d (thread=%p)\n",           ios_interp_type_name(handle->type), handle->slot_number, pthread_self());
 
     // Signal semaphore to wake waiting threads
     dispatch_semaphore_signal(pool->semaphore);
@@ -461,7 +456,7 @@ void ios_interp_force_release_all(ios_interpreter_type_t type) {
         return;
     }
 
-    NSLog(@"[ios_interp_pool] WARNING: Force releasing all %s slots", ios_interp_type_name(type));
+           fprintf(stderr, "           \n", ios_interp_type_name(type));
 
     // Clear all bits
     atomic_store(&pool->slot_bitmap, 0);

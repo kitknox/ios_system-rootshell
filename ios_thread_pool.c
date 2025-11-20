@@ -9,7 +9,8 @@
 #include <errno.h>
 #include <unistd.h>
 #include <sys/sysctl.h>
-#include <Foundation/Foundation.h>
+#include <stdatomic.h>
+#include <stdio.h>
 
 // Default configuration values
 #define DEFAULT_MAX_QUEUE_SIZE 256
@@ -154,7 +155,7 @@ static void work_item_release_internal(ios_work_item_t* item) {
 static void* worker_thread_main(void* arg) {
     ios_thread_pool_t* pool = (ios_thread_pool_t*)arg;
 
-    NSLog(@"[ios_thread_pool] Worker thread %p started", pthread_self());
+           fprintf(stderr, "           \n", pthread_self());
 
     while (true) {
         ios_work_item_t* item = NULL;
@@ -204,7 +205,7 @@ static void* worker_thread_main(void* arg) {
         work_item_release_internal(item);
     }
 
-    NSLog(@"[ios_thread_pool] Worker thread %p exiting", pthread_self());
+           fprintf(stderr, "           \n", pthread_self());
     return NULL;
 }
 
@@ -369,7 +370,7 @@ ios_thread_pool_t* ios_thread_pool_create(const ios_thread_pool_config_t* config
 
     for (int i = 0; i < pool->num_threads; i++) {
         if (pthread_create(&pool->workers[i], NULL, worker_thread_main, pool) != 0) {
-            NSLog(@"[ios_thread_pool] Failed to create worker thread %d", i);
+           fprintf(stderr, "           \n", i);
             // Cleanup and return NULL
             atomic_store(&pool->shutdown, true);
             pthread_cond_broadcast(&pool->work_available);
@@ -386,7 +387,7 @@ ios_thread_pool_t* ios_thread_pool_create(const ios_thread_pool_config_t* config
         }
     }
 
-    NSLog(@"[ios_thread_pool] Created pool '%s' with %d workers", pool->name, pool->num_threads);
+           fprintf(stderr, "           \n", pool->name, pool->num_threads);
 
     return pool;
 }
@@ -566,7 +567,7 @@ int ios_thread_pool_shutdown(ios_thread_pool_t* pool, int timeout_ms) {
         return -1;
     }
 
-    NSLog(@"[ios_thread_pool] Shutting down pool '%s'", pool->name);
+           fprintf(stderr, "           \n", pool->name);
 
     atomic_store(&pool->shutdown, true);
 
@@ -580,7 +581,7 @@ int ios_thread_pool_shutdown(ios_thread_pool_t* pool, int timeout_ms) {
         pthread_join(pool->workers[i], NULL);
     }
 
-    NSLog(@"[ios_thread_pool] Pool '%s' shutdown complete", pool->name);
+           fprintf(stderr, "           \n", pool->name);
 
     return 0;
 }

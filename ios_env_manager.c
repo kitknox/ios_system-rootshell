@@ -8,6 +8,8 @@
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
+#include <stdatomic.h>
+#include <stdio.h>
 
 // Per-thread environment structure
 typedef struct _thread_env {

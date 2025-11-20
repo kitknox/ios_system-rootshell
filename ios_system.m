@@ -12,6 +12,7 @@
 #include "ios_env_manager.h"
 #include "ios_interpreter_pool.h"
 #include "ios_thread_pool.h"
+#include "ios_buffered_pipe.h"
 
 // ios_system(cmd): Executes the command in "cmd". The goal is to be a drop-in replacement for system(), as much as possible.
 // We assume cmd is the command. If vim has prepared '/bin/sh -c "(command -arguments) < inputfile > outputfile",
@@ -81,27 +82,7 @@ void* ios_context(void) {
 }
 
 // Parameters for each session. We can have multiple sessions running in parallel.
-typedef struct _sessionParameters {
-    bool isMainThread;   // are we on the first command?
-    char currentDir[MAXPATHLEN];
-    char previousDirectory[MAXPATHLEN];
-    char localMiniRoot[MAXPATHLEN];
-    pthread_t current_command_root_thread; // thread ID of first command
-    pthread_t lastThreadId; // thread ID of last command.
-    pthread_t mainThreadId; // thread ID of parent command, if any (e.g. vim, which starts "sh -c cd dir && flake8 file")
-    FILE* stdin;
-    FILE* stdout;
-    FILE* stderr;
-    FILE* tty;
-    const void* context;
-    int global_errno;
-    int numCommandsAllocated;
-    int numCommand;
-    char** commandName;
-    char columns[5];
-    char lines[5];
-    bool activePager;
-} sessionParameters;
+// sessionParameters definition moved to ios_session_manager.h
 
 static void initSessionParameters(sessionParameters* sp) {
     NSFileManager *fileManager = [[NSFileManager alloc] init];
@@ -477,7 +458,7 @@ static void cleanup_function(void* parameters) {
 
     // Release interpreter slot if one was acquired
     if (p->interp_handle != NULL) {
-        ios_interp_type_t type = ios_interp_get_type(p->interp_handle);
+        ios_interpreter_type_t type = ios_interp_get_type(p->interp_handle);
         NSLog(@"Releasing %s interpreter slot %d", ios_interp_type_name(type), p->numInterpreter);
         ios_interp_release(p->interp_handle);
         p->interp_handle = NULL;
@@ -1456,35 +1437,69 @@ static __thread FILE* child_stderr = NULL;
 
 FILE* ios_popen(const char* inputCmd, const char* type) {
     NSLog(@"ios_popen: %s mode %s", inputCmd, type);
-    // Save existing streams:
-    int fd[2] = {0};
     const char* command = inputCmd;
     // skip past all spaces
     while ((command[0] == ' ') && strlen(command) > 0) command++;
-    if (pipe(fd) < 0) { return NULL; } // Nothing we can do if pipe fails
-    // F_SETNOSIGPIPE: don't cause a signal 13 if the pipe is already closed
-    fcntl(fd[0], F_SETNOSIGPIPE);
-    fcntl(fd[1], F_SETNOSIGPIPE);
-    // NOTES: fd[0] is set up for reading, fd[1] is set up for writing
-    // fpout = fdopen(fd[1], "w");
-    // fpin = fdopen(fd[0], "r");
+
+    // Create buffered pipe with default configuration (64KB buffer)
+    ios_buffered_pipe_t* buffered_pipe = ios_pipe_create_default();
+    if (buffered_pipe == NULL) {
+        return NULL; // Pipe creation failed
+    }
+
+    // NOTES: Buffered pipe has separate read/write ends
+    // Read end: ios_pipe_fdopen_read()
+    // Write end: ios_pipe_fdopen_write()
     if (type[0] == 'w') {
-        // open pipe for reading
-        child_stdin = fdopen(fd[0], "r");
+        // open pipe for reading (command reads from pipe)
+        child_stdin = ios_pipe_fdopen_read(buffered_pipe);
+        if (child_stdin == NULL) {
+            ios_pipe_destroy(buffered_pipe);
+            return NULL;
+        }
         // launch command: if the command fails, return NULL.
         int returnValue = ios_system(command);
-        if (returnValue == 0)
-            return fdopen(fd[1], "w");
+        if (returnValue == 0) {
+            // Return write end to caller
+            FILE* write_fp = ios_pipe_fdopen_write(buffered_pipe);
+            if (write_fp == NULL) {
+                fclose(child_stdin);
+                child_stdin = NULL;
+                return NULL;
+            }
+            return write_fp;
+        } else {
+            fclose(child_stdin);
+            child_stdin = NULL;
+            ios_pipe_destroy(buffered_pipe);
+        }
     } else if (type[0] == 'r') {
-        // open pipe for writing
+        // open pipe for writing (command writes to pipe)
         // set up streams for thread
-        child_stdout = fdopen(fd[1], "w");
+        child_stdout = ios_pipe_fdopen_write(buffered_pipe);
+        if (child_stdout == NULL) {
+            ios_pipe_destroy(buffered_pipe);
+            return NULL;
+        }
         // launch command: if the command fails, return NULL.
         int returnValue = ios_system(command);
-        if (returnValue == 0)
-            return fdopen(fd[0], "r");
+        if (returnValue == 0) {
+            // Return read end to caller
+            FILE* read_fp = ios_pipe_fdopen_read(buffered_pipe);
+            if (read_fp == NULL) {
+                fclose(child_stdout);
+                child_stdout = NULL;
+                return NULL;
+            }
+            return read_fp;
+        } else {
+            fclose(child_stdout);
+            child_stdout = NULL;
+            ios_pipe_destroy(buffered_pipe);
+        }
     }
     // pipe creation failed, command starting failed:
+    ios_pipe_destroy(buffered_pipe);
     return NULL;
 }
 

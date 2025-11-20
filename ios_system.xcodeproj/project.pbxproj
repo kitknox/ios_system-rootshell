@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1D707A058C450FBE2A9638BE /* ios_session_manager.m in Sources */ = {isa = PBXBuildFile; fileRef = 7953FF85AD87F55CB1E676E1 /* ios_session_manager.m */; };
 		2209215C24B3B05A00D3327B /* open.m in Sources */ = {isa = PBXBuildFile; fileRef = 221CD98D21E8B03D00F3B47C /* open.m */; };
 		22122E2C21BC130700D8FE74 /* say.m in Sources */ = {isa = PBXBuildFile; fileRef = 22122E2A21BC129000D8FE74 /* say.m */; };
 		2216426D2B7B9B5F00043766 /* ssh-add.c in Sources */ = {isa = PBXBuildFile; fileRef = 2216426C2B7B9B5F00043766 /* ssh-add.c */; };
@@ -885,6 +886,9 @@
 		22F6A25C20683F8500E618F9 /* tool_writeout.c in Sources */ = {isa = PBXBuildFile; fileRef = 225781161FDB4D380050F312 /* tool_writeout.c */; settings = {COMPILER_FLAGS = "-DHAVE_CONFIG_H -I curl/curl/include/ -I curl/curl/lib/ -I ./Frameworks/libssh2.framework/Headers"; }; };
 		22F6A25D20683F8600E618F9 /* tool_xattr.c in Sources */ = {isa = PBXBuildFile; fileRef = 225781181FDB4D380050F312 /* tool_xattr.c */; settings = {COMPILER_FLAGS = "-DHAVE_CONFIG_H -I curl/curl/include/ -I curl/curl/lib/ -DBUILDING_LIBCURL -I ./Frameworks/libssh2.framework/Headers"; }; };
 		22F6A25E20683F9B00E618F9 /* ios_system.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 223496AB1FD5FC71007ED1A9 /* ios_system.framework */; };
+		3159688061976C6C96073C43 /* ios_thread_pool.c in Sources */ = {isa = PBXBuildFile; fileRef = 0622FCBE50F6F6A2BEDA3E9B /* ios_thread_pool.c */; };
+		A1655A4CB45C9C8A29CF6D0B /* ios_interpreter_pool.c in Sources */ = {isa = PBXBuildFile; fileRef = BE64637BF8DD05FCA627B6A8 /* ios_interpreter_pool.c */; };
+		AE9AEED215E292E3B6276B6C /* ios_buffered_pipe.c in Sources */ = {isa = PBXBuildFile; fileRef = 64FC477A3FC8D8AE65B55D3F /* ios_buffered_pipe.c */; };
 		D212F98C25B066E9007F5D2D /* libssh2.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = D212F98A25B066E9007F5D2D /* libssh2.xcframework */; };
 		D212F99725B06810007F5D2D /* openssl.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = D212F99525B06810007F5D2D /* openssl.xcframework */; };
 		D285143225B1D7CD003405B4 /* sshkey.h in Headers */ = {isa = PBXBuildFile; fileRef = D285143125B1D7CD003405B4 /* sshkey.h */; };
@@ -894,9 +898,11 @@
 		D285147A25B1E4DC003405B4 /* openbsd-compat.h in Headers */ = {isa = PBXBuildFile; fileRef = D285147925B1E4DC003405B4 /* openbsd-compat.h */; };
 		D285149C25B200B9003405B4 /* openssl-compat.h in Headers */ = {isa = PBXBuildFile; fileRef = D285149B25B200B9003405B4 /* openssl-compat.h */; };
 		D28514A625B20351003405B4 /* config.h in Headers */ = {isa = PBXBuildFile; fileRef = D28514A525B20351003405B4 /* config.h */; };
+		EBC4BDAEBCEDF61FE1DE6775 /* ios_env_manager.c in Sources */ = {isa = PBXBuildFile; fileRef = 6C9B020F08382FB8FD758811 /* ios_env_manager.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0622FCBE50F6F6A2BEDA3E9B /* ios_thread_pool.c */ = {isa = PBXFileReference; includeInIndex = 1; path = ios_thread_pool.c; sourceTree = "<group>"; };
 		22122E2A21BC129000D8FE74 /* say.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = say.m; sourceTree = "<group>"; };
 		2216426C2B7B9B5F00043766 /* ssh-add.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = "ssh-add.c"; path = "ssh_keygen/ssh-add.c"; sourceTree = SOURCE_ROOT; };
 		2217ECD321CBA5F40049B382 /* entropy.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = entropy.c; path = ssh_keygen/entropy.c; sourceTree = "<group>"; };
@@ -1545,6 +1551,10 @@
 		22F6A16920683D5200E618F9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		22F6A1AF20683F4100E618F9 /* curl_ios.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = curl_ios.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		22F6A1B220683F4100E618F9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = ../curl_ios/Info.plist; sourceTree = "<group>"; };
+		64FC477A3FC8D8AE65B55D3F /* ios_buffered_pipe.c */ = {isa = PBXFileReference; includeInIndex = 1; path = ios_buffered_pipe.c; sourceTree = "<group>"; };
+		6C9B020F08382FB8FD758811 /* ios_env_manager.c */ = {isa = PBXFileReference; includeInIndex = 1; path = ios_env_manager.c; sourceTree = "<group>"; };
+		7953FF85AD87F55CB1E676E1 /* ios_session_manager.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = ios_session_manager.m; sourceTree = "<group>"; };
+		BE64637BF8DD05FCA627B6A8 /* ios_interpreter_pool.c */ = {isa = PBXFileReference; includeInIndex = 1; path = ios_interpreter_pool.c; sourceTree = "<group>"; };
 		D212F98A25B066E9007F5D2D /* libssh2.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libssh2.xcframework; path = xcfs/.build/artifacts/xcfs/libssh2/libssh2.xcframework; sourceTree = "<group>"; };
 		D212F99525B06810007F5D2D /* openssl.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = openssl.xcframework; path = xcfs/.build/artifacts/xcfs/openssl/openssl.xcframework; sourceTree = "<group>"; };
 		D285143125B1D7CD003405B4 /* sshkey.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sshkey.h; path = ssh_keygen/sshkey.h; sourceTree = "<group>"; };
@@ -1736,6 +1746,11 @@
 				225478B42B6D903B005041FF /* ssh_cmd copy-Info.plist */,
 				225479332B73814D005041FF /* ssh_cmd copy2-Info.plist */,
 				223EF29C2B9623CB00A8ED5A /* ssh_cmd copy3-Info.plist */,
+				6C9B020F08382FB8FD758811 /* ios_env_manager.c */,
+				BE64637BF8DD05FCA627B6A8 /* ios_interpreter_pool.c */,
+				0622FCBE50F6F6A2BEDA3E9B /* ios_thread_pool.c */,
+				64FC477A3FC8D8AE65B55D3F /* ios_buffered_pipe.c */,
+				7953FF85AD87F55CB1E676E1 /* ios_session_manager.m */,
 			);
 			sourceTree = "<group>";
 		};
@@ -3099,8 +3114,6 @@
 			dependencies = (
 			);
 			name = ios_system;
-			packageProductDependencies = (
-			);
 			productName = ios_system;
 			productReference = 223496AB1FD5FC71007ED1A9 /* ios_system.framework */;
 			productType = "com.apple.product-type.framework";
@@ -3120,8 +3133,6 @@
 			dependencies = (
 			);
 			name = sshd;
-			packageProductDependencies = (
-			);
 			productName = ssh_cmd;
 			productReference = 223EF29B2B9623CA00A8ED5A /* sshd.framework */;
 			productType = "com.apple.product-type.framework";
@@ -3159,8 +3170,6 @@
 			dependencies = (
 			);
 			name = ssh_cmdA;
-			packageProductDependencies = (
-			);
 			productName = ssh_cmd;
 			productReference = 225479322B73814B005041FF /* ssh_cmdA.framework */;
 			productType = "com.apple.product-type.framework";
@@ -3270,8 +3279,6 @@
 			dependencies = (
 			);
 			name = ssh_cmd;
-			packageProductDependencies = (
-			);
 			productName = ssh_cmd;
 			productReference = 22F6A16620683D5200E618F9 /* ssh_cmd.framework */;
 			productType = "com.apple.product-type.framework";
@@ -3290,8 +3297,6 @@
 			dependencies = (
 			);
 			name = curl_ios;
-			packageProductDependencies = (
-			);
 			productName = curl;
 			productReference = 22F6A1AF20683F4100E618F9 /* curl_ios.framework */;
 			productType = "com.apple.product-type.framework";
@@ -3353,8 +3358,6 @@
 				Base,
 			);
 			mainGroup = 223496A11FD5FC71007ED1A9;
-			packageReferences = (
-			);
 			productRefGroup = 223496AC1FD5FC71007ED1A9 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -3518,6 +3521,11 @@
 				22D99CED25AB76BF007F56C9 /* libc_replacement.c in Sources */,
 				223496B71FD5FC89007ED1A9 /* ios_system.m in Sources */,
 				2209215C24B3B05A00D3327B /* open.m in Sources */,
+				EBC4BDAEBCEDF61FE1DE6775 /* ios_env_manager.c in Sources */,
+				A1655A4CB45C9C8A29CF6D0B /* ios_interpreter_pool.c in Sources */,
+				3159688061976C6C96073C43 /* ios_thread_pool.c in Sources */,
+				AE9AEED215E292E3B6276B6C /* ios_buffered_pipe.c in Sources */,
+				1D707A058C450FBE2A9638BE /* ios_session_manager.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
