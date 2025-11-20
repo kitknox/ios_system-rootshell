@@ -13,6 +13,7 @@
 #include "ios_interpreter_pool.h"
 #include "ios_thread_pool.h"
 #include "ios_buffered_pipe.h"
+#include "ios_pipeline.h"
 
 // ios_system(cmd): Executes the command in "cmd". The goal is to be a drop-in replacement for system(), as much as possible.
 // We assume cmd is the command. If vim has prepared '/bin/sh -c "(command -arguments) < inputfile > outputfile",
@@ -2991,6 +2992,35 @@ int ios_system(const char* inputCmd) {
         ios_startInteractive();
     }
     // NSLog(@"command after alias expansion= %s\n", command);
+
+    // PHASE 3.2: Check for pipeline and use parallel pipeline scheduler
+    // Simple check: does command contain '|' that's not part of ||, |&, or &|?
+    char* simplePipeCheck = strstrquoted(command, "|");
+    if (simplePipeCheck) {
+        // This is a pipeline - use parallel execution
+        NSLog(@"[ios_system] Detected pipeline, using parallel scheduler: %s", command);
+
+        ios_pipeline_options_t pipeline_opts = {
+            .share_stderr = false,  // Will be detected by parser
+            .input = thread_stdin,
+            .output = thread_stdout,
+            .error = thread_stderr,
+            .session = currentSession
+        };
+
+        ios_pipeline_t* pipeline = ios_pipeline_execute(command, &pipeline_opts);
+        if (!pipeline) {
+            NSLog(@"[ios_system] Pipeline creation failed");
+            free(originalCommand);
+            return -1;
+        }
+
+        int result = ios_pipeline_wait(pipeline, -1);
+        ios_pipeline_destroy(pipeline);
+
+        free(originalCommand);
+        return result;
+    }
     // Search for input, output and error redirection
     // They can be in any order, although the usual are:
     // command < input > output 2> error, command < input > output 2>&1 or command < input >& output
