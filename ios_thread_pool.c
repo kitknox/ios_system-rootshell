@@ -183,9 +183,7 @@ static void* worker_thread_main(void* arg) {
         atomic_fetch_add(&pool->active_workers, 1);
         atomic_store(&item->state, WORK_EXECUTING);
 
-        fprintf(stderr, "[worker_thread] Executing work item %p\n", item);
         void* result = item->work_fn(item->arg);
-        fprintf(stderr, "[worker_thread] Work item %p completed with result %p\n", item, result);
 
         atomic_fetch_sub(&pool->active_workers, 1);
 
@@ -193,10 +191,8 @@ static void* worker_thread_main(void* arg) {
         pthread_mutex_lock(&item->mutex);
         item->result = result;
         atomic_store(&item->state, WORK_COMPLETED);
-        fprintf(stderr, "[worker_thread] Set work item %p state to WORK_COMPLETED, broadcasting...\n", item);
         pthread_cond_broadcast(&item->cond);
         pthread_mutex_unlock(&item->mutex);
-        fprintf(stderr, "[worker_thread] Broadcast complete for work item %p\n", item);
 
         // Invoke callback if present
         if (item->callback) {
@@ -506,22 +502,14 @@ ios_work_item_t* ios_thread_pool_submit_with_callback(
  */
 int ios_work_wait(ios_work_item_t* item, void** result) {
     if (item == NULL) {
-        fprintf(stderr, "[ios_work_wait] ERROR: item is NULL\n");
         return -1;
     }
-
-    fprintf(stderr, "[ios_work_wait] Waiting for work item %p, current state: %d\n",
-            item, atomic_load(&item->state));
 
     pthread_mutex_lock(&item->mutex);
 
     while (atomic_load(&item->state) != WORK_COMPLETED &&
            atomic_load(&item->state) != WORK_CANCELLED) {
-        fprintf(stderr, "[ios_work_wait] State is %d, waiting on cond var...\n",
-                atomic_load(&item->state));
         pthread_cond_wait(&item->cond, &item->mutex);
-        fprintf(stderr, "[ios_work_wait] Woke up, state is now %d\n",
-                atomic_load(&item->state));
     }
 
     if (result) {
@@ -531,7 +519,6 @@ int ios_work_wait(ios_work_item_t* item, void** result) {
     work_state_t final_state = atomic_load(&item->state);
     pthread_mutex_unlock(&item->mutex);
 
-    fprintf(stderr, "[ios_work_wait] Done waiting, final state: %d\n", final_state);
     return final_state == WORK_COMPLETED ? 0 : -1;
 }
 
@@ -556,20 +543,13 @@ void ios_work_complete(ios_work_item_t* item, void* result) {
         return;
     }
 
-    fprintf(stderr, "[ios_work_complete] Marking work item %p as WORK_COMPLETED with result %p\n",
-            item, result);
-
     pthread_mutex_lock(&item->mutex);
 
     // Only complete if currently executing (not already completed/cancelled)
     if (atomic_load(&item->state) == WORK_EXECUTING) {
         item->result = result;
         atomic_store(&item->state, WORK_COMPLETED);
-        fprintf(stderr, "[ios_work_complete] Broadcasting completion for work item %p\n", item);
         pthread_cond_broadcast(&item->cond);
-    } else {
-        fprintf(stderr, "[ios_work_complete] Work item %p already in state %d, not completing\n",
-                item, atomic_load(&item->state));
     }
 
     pthread_mutex_unlock(&item->mutex);
