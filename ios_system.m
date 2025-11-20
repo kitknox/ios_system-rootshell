@@ -590,7 +590,7 @@ static void cleanup_function(void* parameters) {
     }
 
     cleanup_counter--;
-    NSLog(@"returning from cleanup_function, session: %s\n", (char*)currentSession->context);
+    NSLog(@"returning from cleanup_function, session: %p\n", currentSession->context);
 }
 
 // Avoir calling crash_handler several times:
