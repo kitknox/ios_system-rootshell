@@ -317,6 +317,9 @@ ios_thread_pool_t* ios_thread_pool_create(const ios_thread_pool_config_t* config
         pool->num_threads = config->num_threads;
     }
 
+    fprintf(stderr, "[ios_thread_pool] Creating pool with %d worker threads\n", pool->num_threads);
+    fflush(stderr);
+
     pool->max_queue_size = config->max_queue_size > 0 ? config->max_queue_size : DEFAULT_MAX_QUEUE_SIZE;
     pool->enable_priorities = config->enable_priorities;
     strncpy(pool->name, config->name ? config->name : DEFAULT_THREAD_NAME, sizeof(pool->name) - 1);
