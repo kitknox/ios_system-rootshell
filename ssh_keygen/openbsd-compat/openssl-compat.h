@@ -233,5 +233,26 @@ EVP_MD_CTX *EVP_MD_CTX_new(void);
 void EVP_MD_CTX_free(EVP_MD_CTX *ctx);
 #endif /* HAVE_EVP_MD_CTX_free */
 
+/* OpenSSL 3.x compatibility for deprecated low-level APIs */
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+#ifndef HAVE_RSA_SIZE
+int RSA_size(const RSA *rsa);
+#endif /* HAVE_RSA_SIZE */
+
+#ifndef HAVE_RSA_SIGN
+int RSA_sign(int type, const unsigned char *m, unsigned int m_len,
+    unsigned char *sigret, unsigned int *siglen, RSA *rsa);
+#endif /* HAVE_RSA_SIGN */
+
+#ifndef HAVE_RSA_VERIFY
+int RSA_verify(int type, const unsigned char *m, unsigned int m_len,
+    const unsigned char *sigbuf, unsigned int siglen, RSA *rsa);
+#endif /* HAVE_RSA_VERIFY */
+
+/* BN_is_prime_ex was removed in OpenSSL 3.0 */
+int BN_is_prime_ex(const BIGNUM *p, int nchecks, BN_CTX *ctx, BN_GENCB *cb);
+
+#endif /* OPENSSL_VERSION_NUMBER >= 0x30000000L */
+
 #endif /* WITH_OPENSSL */
 #endif /* _OPENSSL_COMPAT_H */

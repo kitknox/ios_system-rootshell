@@ -21,6 +21,7 @@
 
 #include <stdarg.h>
 #include <string.h>
+#include <TargetConditionals.h>
 
 #ifdef USE_OPENSSL_ENGINE
 # include <openssl/engine.h>
@@ -92,5 +93,157 @@ ssh_libcrypto_init(void)
 # endif
 #endif /* USE_OPENSSL_ENGINE */
 }
+
+/* OpenSSL 3.x compatibility wrappers for deprecated low-level APIs */
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+
+/* RSA functions: only compile for platforms where symbols are missing */
+/* Mac Catalyst has these symbols, but iOS and visionOS don't */
+#if !TARGET_OS_MACCATALYST
+
+#ifndef HAVE_RSA_SIZE
+#include <openssl/evp.h>
+#include <openssl/rsa.h>
+
+int
+RSA_size(const RSA *rsa)
+{
+	EVP_PKEY *pkey = NULL;
+	int ret = 0;
+
+	if (rsa == NULL)
+		return 0;
+
+	/* Create an EVP_PKEY from the RSA key */
+	pkey = EVP_PKEY_new();
+	if (pkey == NULL)
+		return 0;
+
+	/* This increases the reference count, so we need to free both */
+	if (EVP_PKEY_set1_RSA(pkey, (RSA *)rsa) != 1) {
+		EVP_PKEY_free(pkey);
+		return 0;
+	}
+
+	ret = EVP_PKEY_size(pkey);
+	EVP_PKEY_free(pkey);
+	return ret;
+}
+#endif /* HAVE_RSA_SIZE */
+
+#ifndef HAVE_RSA_SIGN
+int
+RSA_sign(int type, const unsigned char *m, unsigned int m_len,
+    unsigned char *sigret, unsigned int *siglen, RSA *rsa)
+{
+	EVP_PKEY *pkey = NULL;
+	EVP_MD_CTX *ctx = NULL;
+	const EVP_MD *md = NULL;
+	size_t sltmp;
+	int ret = 0;
+
+	if (rsa == NULL || m == NULL || sigret == NULL || siglen == NULL)
+		return 0;
+
+	/* Get the digest type */
+	md = EVP_get_digestbynid(type);
+	if (md == NULL)
+		return 0;
+
+	/* Create EVP_PKEY from RSA */
+	pkey = EVP_PKEY_new();
+	if (pkey == NULL)
+		return 0;
+
+	if (EVP_PKEY_set1_RSA(pkey, rsa) != 1)
+		goto cleanup;
+
+	/* Create signing context */
+	ctx = EVP_MD_CTX_new();
+	if (ctx == NULL)
+		goto cleanup;
+
+	/* Perform the signature */
+	if (EVP_DigestSignInit(ctx, NULL, md, NULL, pkey) != 1)
+		goto cleanup;
+
+	if (EVP_DigestSign(ctx, sigret, &sltmp, m, m_len) != 1)
+		goto cleanup;
+
+	*siglen = (unsigned int)sltmp;
+	ret = 1;
+
+cleanup:
+	EVP_MD_CTX_free(ctx);
+	EVP_PKEY_free(pkey);
+	return ret;
+}
+#endif /* HAVE_RSA_SIGN */
+
+#ifndef HAVE_RSA_VERIFY
+int
+RSA_verify(int type, const unsigned char *m, unsigned int m_len,
+    const unsigned char *sigbuf, unsigned int siglen, RSA *rsa)
+{
+	EVP_PKEY *pkey = NULL;
+	EVP_MD_CTX *ctx = NULL;
+	const EVP_MD *md = NULL;
+	int ret = 0;
+
+	if (rsa == NULL || m == NULL || sigbuf == NULL)
+		return 0;
+
+	/* Get the digest type */
+	md = EVP_get_digestbynid(type);
+	if (md == NULL)
+		return 0;
+
+	/* Create EVP_PKEY from RSA */
+	pkey = EVP_PKEY_new();
+	if (pkey == NULL)
+		return 0;
+
+	if (EVP_PKEY_set1_RSA(pkey, rsa) != 1)
+		goto cleanup;
+
+	/* Create verification context */
+	ctx = EVP_MD_CTX_new();
+	if (ctx == NULL)
+		goto cleanup;
+
+	/* Perform the verification */
+	if (EVP_DigestVerifyInit(ctx, NULL, md, NULL, pkey) != 1)
+		goto cleanup;
+
+	if (EVP_DigestVerify(ctx, sigbuf, siglen, m, m_len) == 1)
+		ret = 1;
+
+cleanup:
+	EVP_MD_CTX_free(ctx);
+	EVP_PKEY_free(pkey);
+	return ret;
+}
+#endif /* HAVE_RSA_VERIFY */
+
+#endif /* !TARGET_OS_MACCATALYST */
+
+/* BN_is_prime_ex was removed in OpenSSL 3.0 on ALL platforms */
+#include <openssl/bn.h>
+
+int
+BN_is_prime_ex(const BIGNUM *p, int nchecks, BN_CTX *ctx, BN_GENCB *cb)
+{
+	int ret;
+
+	/* BN_check_prime replaces BN_is_prime_ex in OpenSSL 3.x */
+	ret = BN_check_prime(p, ctx, cb);
+
+	/* BN_check_prime returns 1 for prime, 0 for composite, -1 for error */
+	/* BN_is_prime_ex returned 1 for prime, 0 for composite or error */
+	/* So we need to convert -1 to 0 for compatibility */
+	return (ret == 1) ? 1 : 0;
+}
+
+#endif /* OPENSSL_VERSION_NUMBER >= 0x30000000L */
 
 #endif /* WITH_OPENSSL */

@@ -1673,6 +1673,7 @@
 			files = (
 				22F6A1A920683E5700E618F9 /* libz.tbd in Frameworks */,
 				227011A9262F222C0081F6FC /* openssl.xcframework in Frameworks */,
+				D212F99825B06812007F5D2D /* libcrypto.xcframework in Frameworks */,
 				223EF3032B96303800A8ED5A /* libssh2.xcframework in Frameworks */,
 				22F6A1A820683E5000E618F9 /* libresolv.9.tbd in Frameworks */,
 				22F6A16E20683D6F00E618F9 /* ios_system.framework in Frameworks */,
@@ -5395,6 +5396,24 @@
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/Frameworks",
+					"$(PROJECT_DIR)/../libssh2-for-iOS",
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/../libssh2-for-iOS/libssl.xcframework/ios-arm64/Headers",
+					"$(PROJECT_DIR)/../libssh2-for-iOS/libssl.xcframework/ios-arm64-simulator/Headers",
+					"$(PROJECT_DIR)/../libssh2-for-iOS/libssl.xcframework/ios-arm64_x86_64-maccatalyst/Headers",
+					"$(PROJECT_DIR)/../libssh2-for-iOS/libssl.xcframework/xros-arm64/Headers",
+					"$(PROJECT_DIR)/../libssh2-for-iOS/libssl.xcframework/xros-arm64-simulator/Headers",
+					"$(PROJECT_DIR)/../libssh2-for-iOS/libcrypto.xcframework/ios-arm64/Headers",
+					"$(PROJECT_DIR)/../libssh2-for-iOS/libcrypto.xcframework/ios-arm64-simulator/Headers",
+					"$(PROJECT_DIR)/../libssh2-for-iOS/libcrypto.xcframework/ios-arm64_x86_64-maccatalyst/Headers",
+					"$(PROJECT_DIR)/../libssh2-for-iOS/libcrypto.xcframework/xros-arm64/Headers",
+					"$(PROJECT_DIR)/../libssh2-for-iOS/libcrypto.xcframework/xros-arm64-simulator/Headers",
+				);
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"OPENSSL_API_COMPAT=0x10100000L",
 				);
 				INFOPLIST_FILE = ssh_cmd/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
@@ -5443,6 +5462,24 @@
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/Frameworks",
+					"$(PROJECT_DIR)/../libssh2-for-iOS",
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/../libssh2-for-iOS/libssl.xcframework/ios-arm64/Headers",
+					"$(PROJECT_DIR)/../libssh2-for-iOS/libssl.xcframework/ios-arm64-simulator/Headers",
+					"$(PROJECT_DIR)/../libssh2-for-iOS/libssl.xcframework/ios-arm64_x86_64-maccatalyst/Headers",
+					"$(PROJECT_DIR)/../libssh2-for-iOS/libssl.xcframework/xros-arm64/Headers",
+					"$(PROJECT_DIR)/../libssh2-for-iOS/libssl.xcframework/xros-arm64-simulator/Headers",
+					"$(PROJECT_DIR)/../libssh2-for-iOS/libcrypto.xcframework/ios-arm64/Headers",
+					"$(PROJECT_DIR)/../libssh2-for-iOS/libcrypto.xcframework/ios-arm64-simulator/Headers",
+					"$(PROJECT_DIR)/../libssh2-for-iOS/libcrypto.xcframework/ios-arm64_x86_64-maccatalyst/Headers",
+					"$(PROJECT_DIR)/../libssh2-for-iOS/libcrypto.xcframework/xros-arm64/Headers",
+					"$(PROJECT_DIR)/../libssh2-for-iOS/libcrypto.xcframework/xros-arm64-simulator/Headers",
+				);
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"OPENSSL_API_COMPAT=0x10100000L",
 				);
 				INFOPLIST_FILE = ssh_cmd/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
