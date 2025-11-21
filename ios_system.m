@@ -2311,8 +2311,10 @@ int ios_kill_session(const void* sessionId) {
         if ((sigaction(SIGINT, NULL, &query_action) >= 0) &&
             (query_action.sa_handler != SIG_DFL) &&
             (query_action.sa_handler != SIG_IGN)) {
-            // Custom signal handler - just send SIGINT
-            result = pthread_kill(thread, SIGINT);
+            // Custom signal handler detected - use pthread_cancel() instead of pthread_kill(SIGINT)
+            // Cross-thread signal delivery is unsafe when commands are blocking in syscalls
+            // like select() in ping, as it can corrupt thread state and cause crashes
+            result = pthread_cancel(thread);
         } else {
             // No custom handler - check command name for special handling
             const char* commandName = ios_progname();

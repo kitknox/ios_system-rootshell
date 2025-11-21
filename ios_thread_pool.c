@@ -11,6 +11,7 @@
 #include <sys/sysctl.h>
 #include <stdatomic.h>
 #include <stdio.h>
+#include <signal.h>
 
 // Default configuration values
 #define DEFAULT_MAX_QUEUE_SIZE 256
@@ -157,6 +158,13 @@ static void work_item_release_internal(ios_work_item_t* item) {
  */
 static void* worker_thread_main(void* arg) {
     ios_thread_pool_t* pool = (ios_thread_pool_t*)arg;
+
+    // Block SIGINT in worker threads - use pthread_cancel() for interruption
+    // This prevents cross-thread signal delivery from corrupting blocking syscalls
+    sigset_t mask;
+    sigemptyset(&mask);
+    sigaddset(&mask, SIGINT);
+    pthread_sigmask(SIG_BLOCK, &mask, NULL);
 
            fprintf(stderr, "           \n", pthread_self());
 
