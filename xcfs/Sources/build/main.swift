@@ -43,7 +43,7 @@ for scheme in schemes {
         dirPath: ".build",
         project: "ios_system",
         scheme: scheme,
-        platforms: platforms.map { ($0, excludedArchs: []) }
+        platforms: platforms.map { ($0, excludedArchs: $0 == .iPhoneSimulator ? [.x86_64] : []) }
     )
 
     // Build archives for visionOS platforms manually
@@ -55,7 +55,8 @@ for scheme in schemes {
         try sh("""
             xcodebuild archive -project ios_system.xcodeproj -scheme \(scheme) -sdk \(sdk) \
             -archivePath \(archivePath) \
-            BUILD_FOR_DISTRIBUTION=YES SKIP_INSTALL=NO ENABLE_BITCODE=YES
+            BUILD_FOR_DISTRIBUTION=YES SKIP_INSTALL=NO ENABLE_BITCODE=YES \
+            EXCLUDED_ARCHS=x86_64
             """)
     }
 

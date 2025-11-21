@@ -78,7 +78,7 @@
 /* #undef CURL_DISABLE_NETRC */
 
 /* to disable NTLM support */
-/* #undef CURL_DISABLE_NTLM */
+#define CURL_DISABLE_NTLM 1
 
 /* if the OpenSSL configuration won't be loaded automatically */
 /* #undef CURL_DISABLE_OPENSSL_AUTO_LOAD_CONFIG */
@@ -478,7 +478,7 @@
 
 /* if you have the functions SSL_CTX_set_srp_username and
    SSL_CTX_set_srp_password */
-#define HAVE_OPENSSL_SRP 1
+/* #undef HAVE_OPENSSL_SRP */
 
 /* Define to 1 if you have the <openssl/ssl.h> header file. */
 #define HAVE_OPENSSL_SSL_H 1
@@ -921,7 +921,7 @@
 /* #undef USE_THREADS_WIN32 */
 
 /* Use TLS-SRP authentication */
-#define USE_TLS_SRP 1
+/* #undef USE_TLS_SRP */
 
 /* Use Unix domain sockets */
 #define USE_UNIX_SOCKETS 1
