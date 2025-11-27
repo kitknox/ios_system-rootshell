@@ -204,7 +204,8 @@ ios_command_t* ios_system_async(const char* command, const ios_async_options_t* 
 
     // Create execution thread
     if (pthread_create(&cmd->thread_id, NULL, command_thread_func, cmd) != 0) {
-        fprintf(stderr, "[ios_async] Failed to create thread for command: %s\n", command);
+        // Only log errors, not routine operations
+        NSLog(@"[ios_async] Failed to create thread for command: %s", command);
         free(cmd->command);
         pthread_mutex_destroy(&cmd->mutex);
         pthread_cond_destroy(&cmd->done);
@@ -214,8 +215,6 @@ ios_command_t* ios_system_async(const char* command, const ios_async_options_t* 
 
     // Detach thread (we'll join manually in wait/release)
     pthread_detach(cmd->thread_id);
-
-    fprintf(stderr, "[ios_async] Started async command: %s\n", command);
 
     return cmd;
 }
@@ -363,8 +362,6 @@ void ios_command_release(ios_command_t* cmd) {
     if (status == IOS_CMD_PENDING || status == IOS_CMD_RUNNING) {
         ios_command_wait(cmd);
     }
-
-    fprintf(stderr, "[ios_async] Releasing command: %s\n", cmd->command);
 
     // Free resources
     free(cmd->command);

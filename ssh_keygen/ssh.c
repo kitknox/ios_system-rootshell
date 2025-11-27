@@ -70,6 +70,10 @@
 #include <limits.h>
 #include <locale.h>
 
+#ifdef __APPLE__
+#include "ios_error.h"  // For ios_isatty()
+#endif
+
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
@@ -1370,7 +1374,12 @@ ssh_main(int ac, char **av)
 	    (muxclient_command && muxclient_command != SSHMUX_COMMAND_PROXY))
 		tty_flag = 0;
 	/* Do not allocate a tty if stdin is not a tty. */
+#ifdef __APPLE__
+	// Use ios_isatty() on iOS/macOS to properly detect ios_system's pipe-based terminals
+	if ((!ios_isatty(fileno(stdin)) || stdin_null_flag) &&
+#else
 	if ((!isatty(fileno(stdin)) || stdin_null_flag) &&
+#endif
 	    options.request_tty != REQUEST_TTY_FORCE) {
 		if (tty_flag)
 			logit("Pseudo-terminal will not be allocated because "
