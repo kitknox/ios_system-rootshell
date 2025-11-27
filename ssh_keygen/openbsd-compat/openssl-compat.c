@@ -97,9 +97,13 @@ ssh_libcrypto_init(void)
 /* OpenSSL 3.x compatibility wrappers for deprecated low-level APIs */
 #if OPENSSL_VERSION_NUMBER >= 0x30000000L
 
-/* RSA functions: only compile for platforms where symbols are missing */
-/* Mac Catalyst has these symbols, but iOS and visionOS don't */
-#if !TARGET_OS_MACCATALYST
+/* RSA functions: only compile when deprecated API is NOT available in OpenSSL.
+ * If OPENSSL_NO_DEPRECATED_3_0 is defined, the deprecated low-level APIs
+ * (RSA_sign, RSA_verify, RSA_size, BN_is_prime_ex) are removed from libcrypto
+ * and we need to provide our own implementations.
+ * If deprecated API IS available, these symbols exist in libcrypto and we
+ * should not redefine them to avoid duplicate symbol errors. */
+#ifdef OPENSSL_NO_DEPRECATED_3_0
 
 #ifndef HAVE_RSA_SIZE
 #include <openssl/evp.h>
@@ -225,9 +229,7 @@ cleanup:
 }
 #endif /* HAVE_RSA_VERIFY */
 
-#endif /* !TARGET_OS_MACCATALYST */
-
-/* BN_is_prime_ex was removed in OpenSSL 3.0 on ALL platforms */
+/* BN_is_prime_ex was removed in OpenSSL 3.0 - only needed when deprecated API unavailable */
 #include <openssl/bn.h>
 
 int
@@ -243,6 +245,8 @@ BN_is_prime_ex(const BIGNUM *p, int nchecks, BN_CTX *ctx, BN_GENCB *cb)
 	/* So we need to convert -1 to 0 for compatibility */
 	return (ret == 1) ? 1 : 0;
 }
+
+#endif /* OPENSSL_NO_DEPRECATED_3_0 */
 
 #endif /* OPENSSL_VERSION_NUMBER >= 0x30000000L */
 

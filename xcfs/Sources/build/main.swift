@@ -37,6 +37,18 @@ if args.count > 1 && args[1] != "all" {
 
 var checksums: [[String?]] = []
 
+// First, do regular builds for visionOS platforms to populate DerivedData with dependencies
+// This is needed because archive builds use isolated build directories and can't find
+// framework dependencies that were archived separately
+// Always build ios_system first as it's a common dependency
+for platform in additionalPlatforms {
+    print("Pre-building ios_system for \(platform) to populate dependencies...")
+    try sh("""
+        xcodebuild build -project ios_system.xcodeproj -scheme ios_system -sdk \(platform) \
+        -configuration Release EXCLUDED_ARCHS=x86_64
+        """)
+}
+
 for scheme in schemes {
     // Build archives for FMake-supported platforms
     try xbArchive(
@@ -47,16 +59,29 @@ for scheme in schemes {
     )
 
     // Build archives for visionOS platforms manually
+    // Dependencies are already built from the pre-build step above
+    // We need to add FRAMEWORK_SEARCH_PATHS to find ios_system.framework from DerivedData
     for platform in additionalPlatforms {
         let archivePath = ".build/\(scheme)-\(platform).xcarchive"
         let sdk = platform
+        let configuration = "Release"
+        // Find DerivedData path for this project
+        let derivedDataPattern = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/Developer/Xcode/DerivedData")
+            .path
+        let derivedDataDir = try FileManager.default.contentsOfDirectory(atPath: derivedDataPattern)
+            .first { $0.hasPrefix("ios_system-") }
+        let frameworkSearchPath = derivedDataDir.map {
+            "\(derivedDataPattern)/\($0)/Build/Products/\(configuration)-\(sdk)"
+        } ?? ""
 
-        print("Building \(scheme) for \(platform)...")
+        print("Archiving \(scheme) for \(platform)...")
         try sh("""
             xcodebuild archive -project ios_system.xcodeproj -scheme \(scheme) -sdk \(sdk) \
             -archivePath \(archivePath) \
             BUILD_FOR_DISTRIBUTION=YES SKIP_INSTALL=NO ENABLE_BITCODE=YES \
-            EXCLUDED_ARCHS=x86_64
+            EXCLUDED_ARCHS=x86_64 SDKROOT=\(sdk) SUPPORTED_PLATFORMS=\(sdk) \
+            'FRAMEWORK_SEARCH_PATHS=$(inherited) \(frameworkSearchPath)'
             """)
     }
 
