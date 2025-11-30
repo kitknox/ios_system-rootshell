@@ -78,6 +78,13 @@ static void* command_thread_func(void* arg) {
     // Update status to running
     atomic_store(&cmd->status, IOS_CMD_RUNNING);
 
+    // Switch to the correct session context BEFORE setting up streams
+    // This is critical for ios_kill_session() to find the right thread
+    if (cmd->session != NULL) {
+        extern void ios_switchSession(const void* sessionId);
+        ios_switchSession(cmd->session);
+    }
+
     // Set up thread-local I/O streams
     extern __thread FILE* thread_stdin;
     extern __thread FILE* thread_stdout;
@@ -330,8 +337,11 @@ int ios_command_kill(ios_command_t* cmd) {
         return 0;  // Already finished
     }
 
-    // Send SIGINT to thread
-    int result = pthread_kill(cmd->thread_id, SIGINT);
+    // Use pthread_cancel() instead of pthread_kill(SIGINT)
+    // pthread_kill(SIGINT) is dangerous because it can interrupt blocking syscalls
+    // like pthread_cond_wait() in ios_work_wait(), causing crashes.
+    // pthread_cancel() cooperates with cancellation points and is much safer.
+    int result = pthread_cancel(cmd->thread_id);
 
     if (result == 0) {
         atomic_store(&cmd->status, IOS_CMD_KILLED);

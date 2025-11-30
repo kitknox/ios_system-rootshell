@@ -514,6 +514,12 @@ ios_work_item_t* ios_thread_pool_submit_with_callback(
     return item;
 }
 
+// Cleanup handler for pthread_cancel - unlocks mutex to prevent deadlock
+static void ios_work_wait_cleanup(void* arg) {
+    pthread_mutex_t* mutex = (pthread_mutex_t*)arg;
+    pthread_mutex_unlock(mutex);
+}
+
 /**
  * Wait for work to complete
  */
@@ -524,10 +530,18 @@ int ios_work_wait(ios_work_item_t* item, void** result) {
 
     pthread_mutex_lock(&item->mutex);
 
+    // Register cleanup handler to unlock mutex if thread is cancelled
+    // pthread_cond_wait is a cancellation point - without this handler,
+    // the mutex would be left locked on cancellation, causing deadlock
+    pthread_cleanup_push(ios_work_wait_cleanup, &item->mutex);
+
     while (atomic_load(&item->state) != WORK_COMPLETED &&
            atomic_load(&item->state) != WORK_CANCELLED) {
         pthread_cond_wait(&item->cond, &item->mutex);
     }
+
+    // Pop cleanup handler (0 = don't execute it, we'll unlock manually)
+    pthread_cleanup_pop(0);
 
     if (result) {
         *result = item->result;
