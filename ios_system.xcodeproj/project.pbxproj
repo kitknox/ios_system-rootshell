@@ -3,11 +3,12 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 54;
+	objectVersion = 70;
 	objects = {
 
 /* Begin PBXBuildFile section */
 		1D707A058C450FBE2A9638BE /* ios_session_manager.m in Sources */ = {isa = PBXBuildFile; fileRef = 7953FF85AD87F55CB1E676E1 /* ios_session_manager.m */; };
+		47076CAA2EE0FFFF0012B882 /* libncurses.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 227F87D6202EFA68001751C6 /* libncurses.tbd */; };
 		2209215C24B3B05A00D3327B /* open.m in Sources */ = {isa = PBXBuildFile; fileRef = 221CD98D21E8B03D00F3B47C /* open.m */; };
 		22122E2C21BC130700D8FE74 /* say.m in Sources */ = {isa = PBXBuildFile; fileRef = 22122E2A21BC129000D8FE74 /* say.m */; };
 		2216426D2B7B9B5F00043766 /* ssh-add.c in Sources */ = {isa = PBXBuildFile; fileRef = 2216426C2B7B9B5F00043766 /* ssh-add.c */; };
@@ -889,14 +890,14 @@
 		2453CC7309263DC6DFB500AB /* ios_pid_allocator.c in Sources */ = {isa = PBXBuildFile; fileRef = F4CCBCAF5225A15765AD4165 /* ios_pid_allocator.c */; };
 		2F6B309D7B22E5A840C44C26 /* ios_pid_allocator.h in Headers */ = {isa = PBXBuildFile; fileRef = 29F300FE4EC5898C70CEC71F /* ios_pid_allocator.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3159688061976C6C96073C43 /* ios_thread_pool.c in Sources */ = {isa = PBXBuildFile; fileRef = 0622FCBE50F6F6A2BEDA3E9B /* ios_thread_pool.c */; };
+		47076C882EE0D7BE0012B882 /* ios_system.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 223496AB1FD5FC71007ED1A9 /* ios_system.framework */; };
+		47076C8A2EE0D7BE0012B882 /* awk.h in Headers */ = {isa = PBXBuildFile; fileRef = 22F6A15120683BBD00E618F9 /* awk.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		67DE21D6B73138B03F9DCFD8 /* ios_async.m in Sources */ = {isa = PBXBuildFile; fileRef = 1DC97367A0FF6E503474FD03 /* ios_async.m */; };
 		A1655A4CB45C9C8A29CF6D0B /* ios_interpreter_pool.c in Sources */ = {isa = PBXBuildFile; fileRef = BE64637BF8DD05FCA627B6A8 /* ios_interpreter_pool.c */; };
 		AE9AEED215E292E3B6276B6C /* ios_buffered_pipe.c in Sources */ = {isa = PBXBuildFile; fileRef = 64FC477A3FC8D8AE65B55D3F /* ios_buffered_pipe.c */; };
 		C56F9E1A72F26E9BA1B53158 /* ios_pipeline.m in Sources */ = {isa = PBXBuildFile; fileRef = DC5C39152FD3989717D10E2E /* ios_pipeline.m */; };
 		D212F98C25B066E9007F5D2D /* libssh2.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = D212F98A25B066E9007F5D2D /* libssh2.xcframework */; };
 		D212F99725B06810007F5D2D /* openssl.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = D212F99525B06810007F5D2D /* openssl.xcframework */; };
-		D212F99825B06812007F5D2D /* libcrypto.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = D212F99625B06811007F5D2D /* libcrypto.xcframework */; };
-		5D0247D3E6864864A6538729 /* libcrypto.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = D212F99625B06811007F5D2D /* libcrypto.xcframework */; };
 		D285143225B1D7CD003405B4 /* sshkey.h in Headers */ = {isa = PBXBuildFile; fileRef = D285143125B1D7CD003405B4 /* sshkey.h */; };
 		D285144425B1DE19003405B4 /* cipher.h in Headers */ = {isa = PBXBuildFile; fileRef = D285144325B1DE19003405B4 /* cipher.h */; };
 		D285145625B1DE61003405B4 /* ssherr.h in Headers */ = {isa = PBXBuildFile; fileRef = D285145525B1DE61003405B4 /* ssherr.h */; };
@@ -909,8 +910,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		0622FCBE50F6F6A2BEDA3E9B /* ios_thread_pool.c */ = {isa = PBXFileReference; includeInIndex = 1; path = ios_thread_pool.c; sourceTree = "<group>"; };
-		1DC97367A0FF6E503474FD03 /* ios_async.m */ = {isa = PBXFileReference; includeInIndex = 1; path = ios_async.m; sourceTree = "<group>"; };
+		0622FCBE50F6F6A2BEDA3E9B /* ios_thread_pool.c */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.c; path = ios_thread_pool.c; sourceTree = "<group>"; };
+		1DC97367A0FF6E503474FD03 /* ios_async.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = ios_async.m; sourceTree = "<group>"; };
 		22122E2A21BC129000D8FE74 /* say.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = say.m; sourceTree = "<group>"; };
 		2216426C2B7B9B5F00043766 /* ssh-add.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = "ssh-add.c"; path = "ssh_keygen/ssh-add.c"; sourceTree = SOURCE_ROOT; };
 		2217ECD321CBA5F40049B382 /* entropy.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = entropy.c; path = ssh_keygen/entropy.c; sourceTree = "<group>"; };
@@ -1561,11 +1562,13 @@
 		22F6A1B220683F4100E618F9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = ../curl_ios/Info.plist; sourceTree = "<group>"; };
 		29F300FE4EC5898C70CEC71F /* ios_pid_allocator.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = ios_pid_allocator.h; sourceTree = "<group>"; };
 		4385685B6FF5BE250B8894AC /* ios_async.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = ios_async.h; sourceTree = "<group>"; };
+		47076C8F2EE0D7BE0012B882 /* joe.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = joe.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		47076C902EE0D7BE0012B882 /* awk copy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "awk copy-Info.plist"; path = "/Users/kit/Development/ios_system/awk copy-Info.plist"; sourceTree = "<absolute>"; };
 		602C119EDFA187FCE1B9CC28 /* ios_pipeline.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = ios_pipeline.h; sourceTree = "<group>"; };
-		64FC477A3FC8D8AE65B55D3F /* ios_buffered_pipe.c */ = {isa = PBXFileReference; includeInIndex = 1; path = ios_buffered_pipe.c; sourceTree = "<group>"; };
-		6C9B020F08382FB8FD758811 /* ios_env_manager.c */ = {isa = PBXFileReference; includeInIndex = 1; path = ios_env_manager.c; sourceTree = "<group>"; };
+		64FC477A3FC8D8AE65B55D3F /* ios_buffered_pipe.c */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.c; path = ios_buffered_pipe.c; sourceTree = "<group>"; };
+		6C9B020F08382FB8FD758811 /* ios_env_manager.c */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.c; path = ios_env_manager.c; sourceTree = "<group>"; };
 		7953FF85AD87F55CB1E676E1 /* ios_session_manager.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = ios_session_manager.m; sourceTree = "<group>"; };
-		BE64637BF8DD05FCA627B6A8 /* ios_interpreter_pool.c */ = {isa = PBXFileReference; includeInIndex = 1; path = ios_interpreter_pool.c; sourceTree = "<group>"; };
+		BE64637BF8DD05FCA627B6A8 /* ios_interpreter_pool.c */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.c; path = ios_interpreter_pool.c; sourceTree = "<group>"; };
 		D212F98A25B066E9007F5D2D /* libssh2.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libssh2.xcframework; path = "../libssh2-for-iOS/libssh2.xcframework"; sourceTree = "<group>"; };
 		D212F99525B06810007F5D2D /* openssl.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = openssl.xcframework; path = "../libssh2-for-iOS/openssl.xcframework"; sourceTree = "<group>"; };
 		D212F99625B06811007F5D2D /* libcrypto.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libcrypto.xcframework; path = "../libssh2-for-iOS/libcrypto.xcframework"; sourceTree = "<group>"; };
@@ -1576,9 +1579,138 @@
 		D285147925B1E4DC003405B4 /* openbsd-compat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "openbsd-compat.h"; path = "ssh_keygen/openbsd-compat/openbsd-compat.h"; sourceTree = "<group>"; };
 		D285149B25B200B9003405B4 /* openssl-compat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "openssl-compat.h"; path = "ssh_keygen/openbsd-compat/openssl-compat.h"; sourceTree = "<group>"; };
 		D28514A525B20351003405B4 /* config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = config.h; path = ssh_keygen/config.h; sourceTree = "<group>"; };
-		DC5C39152FD3989717D10E2E /* ios_pipeline.m */ = {isa = PBXFileReference; includeInIndex = 1; path = ios_pipeline.m; sourceTree = "<group>"; };
-		F4CCBCAF5225A15765AD4165 /* ios_pid_allocator.c */ = {isa = PBXFileReference; includeInIndex = 1; path = ios_pid_allocator.c; sourceTree = "<group>"; };
+		DC5C39152FD3989717D10E2E /* ios_pipeline.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = ios_pipeline.m; sourceTree = "<group>"; };
+		F4CCBCAF5225A15765AD4165 /* ios_pid_allocator.c */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.c; path = ios_pid_allocator.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		4707737D2EE0DE350012B882 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				joe/b.c,
+				joe/b.h,
+				joe/blocks.c,
+				joe/blocks.h,
+				joe/builtin.c,
+				joe/builtin.h,
+				joe/builtins.c,
+				joe/bw.c,
+				joe/bw.h,
+				joe/cclass.c,
+				joe/cclass.h,
+				joe/charmap.c,
+				joe/charmap.h,
+				joe/cmd.c,
+				joe/cmd.h,
+				joe/colors.c,
+				joe/colors.h,
+				joe/config.h,
+				joe/EngNotation.c,
+				joe/EngNotation.h,
+				joe/frag.c,
+				joe/frag.h,
+				joe/gettext.c,
+				joe/gettext.h,
+				joe/hash.c,
+				joe/hash.h,
+				joe/help.c,
+				joe/help.h,
+				joe/ios_compat.h,
+				joe/kbd.c,
+				joe/kbd.h,
+				joe/lattr.c,
+				joe/lattr.h,
+				joe/macro.c,
+				joe/macro.h,
+				joe/main.c,
+				joe/main.h,
+				joe/Makefile.am,
+				joe/menu.c,
+				joe/menu.h,
+				joe/mmenu.c,
+				joe/mmenu.h,
+				joe/mouse.c,
+				joe/mouse.h,
+				joe/options.c,
+				joe/options.h,
+				joe/path.c,
+				joe/path.h,
+				joe/poshist.c,
+				joe/poshist.h,
+				joe/pw.c,
+				joe/pw.h,
+				joe/queue.c,
+				joe/queue.h,
+				joe/qw.c,
+				joe/qw.h,
+				joe/rc.c,
+				joe/rc.h,
+				joe/regex.c,
+				joe/regex.h,
+				joe/scrn.c,
+				joe/scrn.h,
+				joe/state.c,
+				joe/state.h,
+				joe/syntax.c,
+				joe/syntax.h,
+				joe/tab.c,
+				joe/tab.h,
+				joe/termcap.c,
+				joe/termcapj.h,
+				joe/TODO,
+				joe/tty.c,
+				joe/tty.h,
+				joe/tw.c,
+				joe/tw.h,
+				joe/types.h,
+				joe/ublock.c,
+				joe/ublock.h,
+				joe/uedit.c,
+				joe/uedit.h,
+				joe/uerror.c,
+				joe/uerror.h,
+				joe/ufile.c,
+				joe/ufile.h,
+				joe/uformat.c,
+				joe/uformat.h,
+				joe/uisrch.c,
+				joe/uisrch.h,
+				joe/umath.c,
+				joe/umath.h,
+				joe/undo.c,
+				joe/undo.h,
+				"joe/unicat-10.0.0.c",
+				joe/unicode.c,
+				joe/unicode.h,
+				joe/usearch.c,
+				joe/usearch.h,
+				joe/ushell.c,
+				joe/ushell.h,
+				joe/utag.c,
+				joe/utag.h,
+				joe/utf8.c,
+				joe/utf8.h,
+				joe/utils.c,
+				joe/utils.h,
+				joe/va.c,
+				joe/va.h,
+				joe/vfile.c,
+				joe/vfile.h,
+				joe/vs.c,
+				joe/vs.h,
+				joe/vt.c,
+				joe/vt.h,
+				joe/w.c,
+				joe/w.h,
+			);
+			target = 47076C7C2EE0D7BE0012B882 /* joe */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		470769AD2EE0D7860012B882 /* joe */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (4707737D2EE0DE350012B882 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = joe; sourceTree = "<group>"; };
+		470769BA2EE0D7860012B882 /* joeTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = joeTests; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		223496A71FD5FC71007ED1A9 /* Frameworks */ = {
@@ -1690,6 +1822,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		47076C872EE0D7BE0012B882 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				47076C882EE0D7BE0012B882 /* ios_system.framework in Frameworks */,
+				47076CAA2EE0FFFF0012B882 /* libncurses.tbd in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -1755,6 +1896,8 @@
 				22878D4B2036212E00286AF1 /* ssh */,
 				223EF2F62B96246A00A8ED5A /* sshd */,
 				224DF70F2B75712C00F13C58 /* ssh-agent */,
+				470769AD2EE0D7860012B882 /* joe */,
+				470769BA2EE0D7860012B882 /* joeTests */,
 				223496AC1FD5FC71007ED1A9 /* Products */,
 				223497AB1FD6CF7A007ED1A9 /* Frameworks */,
 				225478B42B6D903B005041FF /* ssh_cmd copy-Info.plist */,
@@ -1771,6 +1914,7 @@
 				F4CCBCAF5225A15765AD4165 /* ios_pid_allocator.c */,
 				4385685B6FF5BE250B8894AC /* ios_async.h */,
 				1DC97367A0FF6E503474FD03 /* ios_async.m */,
+				47076C902EE0D7BE0012B882 /* awk copy-Info.plist */,
 			);
 			sourceTree = "<group>";
 		};
@@ -1788,6 +1932,7 @@
 				225479322B73814B005041FF /* ssh_cmdA.framework */,
 				224DF70E2B75712B00F13C58 /* ssh_agent.framework */,
 				223EF29B2B9623CA00A8ED5A /* sshd.framework */,
+				47076C8F2EE0D7BE0012B882 /* joe.framework */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -3120,6 +3265,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		47076C892EE0D7BE0012B882 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				47076C8A2EE0D7BE0012B882 /* awk.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
@@ -3324,12 +3477,31 @@
 			productReference = 22F6A1AF20683F4100E618F9 /* curl_ios.framework */;
 			productType = "com.apple.product-type.framework";
 		};
+		47076C7C2EE0D7BE0012B882 /* joe */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 47076C8C2EE0D7BE0012B882 /* Build configuration list for PBXNativeTarget "joe" */;
+			buildPhases = (
+				47076C7D2EE0D7BE0012B882 /* Sources */,
+				47076C872EE0D7BE0012B882 /* Frameworks */,
+				47076C892EE0D7BE0012B882 /* Headers */,
+				47076C8B2EE0D7BE0012B882 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = joe;
+			productName = awk;
+			productReference = 47076C8F2EE0D7BE0012B882 /* joe.framework */;
+			productType = "com.apple.product-type.framework";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
 		223496A21FD5FC71007ED1A9 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
+				LastSwiftUpdateCheck = 2610;
 				LastUpgradeCheck = 1010;
 				ORGANIZATIONNAME = "Nicolas Holzschuch";
 				TargetAttributes = {
@@ -3396,6 +3568,7 @@
 				225478B82B73814B005041FF /* ssh_cmdA */,
 				224DF70D2B75712B00F13C58 /* ssh_agent */,
 				223EF2132B9623CA00A8ED5A /* sshd */,
+				47076C7C2EE0D7BE0012B882 /* joe */,
 			);
 		};
 /* End PBXProject section */
@@ -3472,6 +3645,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		22F6A1AD20683F4100E618F9 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		47076C8B2EE0D7BE0012B882 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -4430,6 +4610,13 @@
 				22F6A1D220683F6700E618F9 /* fileinfo.c in Sources */,
 				22F6A21120683F6700E618F9 /* strerror.c in Sources */,
 				222419D22A90A3EC003AB5B7 /* dynhds.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		47076C7D2EE0D7BE0012B882 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5413,6 +5600,10 @@
 					"$(PROJECT_DIR)/Frameworks",
 					"$(PROJECT_DIR)/../libssh2-for-iOS",
 				);
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"OPENSSL_API_COMPAT=0x10100000L",
+				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/../libssh2-for-iOS/libssl.xcframework/ios-arm64/Headers",
@@ -5425,10 +5616,6 @@
 					"$(PROJECT_DIR)/../libssh2-for-iOS/libcrypto.xcframework/ios-arm64_x86_64-maccatalyst/Headers",
 					"$(PROJECT_DIR)/../libssh2-for-iOS/libcrypto.xcframework/xros-arm64/Headers",
 					"$(PROJECT_DIR)/../libssh2-for-iOS/libcrypto.xcframework/xros-arm64-simulator/Headers",
-				);
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					"$(inherited)",
-					"OPENSSL_API_COMPAT=0x10100000L",
 				);
 				INFOPLIST_FILE = ssh_cmd/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
@@ -5479,6 +5666,10 @@
 					"$(PROJECT_DIR)/Frameworks",
 					"$(PROJECT_DIR)/../libssh2-for-iOS",
 				);
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"OPENSSL_API_COMPAT=0x10100000L",
+				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/../libssh2-for-iOS/libssl.xcframework/ios-arm64/Headers",
@@ -5491,10 +5682,6 @@
 					"$(PROJECT_DIR)/../libssh2-for-iOS/libcrypto.xcframework/ios-arm64_x86_64-maccatalyst/Headers",
 					"$(PROJECT_DIR)/../libssh2-for-iOS/libcrypto.xcframework/xros-arm64/Headers",
 					"$(PROJECT_DIR)/../libssh2-for-iOS/libcrypto.xcframework/xros-arm64-simulator/Headers",
-				);
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					"$(inherited)",
-					"OPENSSL_API_COMPAT=0x10100000L",
 				);
 				INFOPLIST_FILE = ssh_cmd/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
@@ -5637,6 +5824,97 @@
 			};
 			name = Release;
 		};
+		47076C8D2EE0D7BE0012B882 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CODE_SIGN_IDENTITY = "";
+				CODE_SIGN_STYLE = Automatic;
+				DEFINES_MODULE = YES;
+				DEVELOPMENT_TEAM = VG8Z23C8YL;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				HEADER_SEARCH_PATHS = "";
+				INFOPLIST_FILE = joe_framework/Info.plist;
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				ONLY_ACTIVE_ARCH = NO;
+				OTHER_CFLAGS = (
+					"-Wshorten-64-to-32",
+					"-Wno-ambiguous-macro",
+					"-Wunused-const-variable",
+					"-Wincompatible-pointer-types-discards-qualifiers",
+					"-I",
+					ios_system/,
+				);
+				OTHER_LDFLAGS = (
+					"-Xlinker",
+					"-no_fixup_chains",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "Nicolas-Holzschuch.joe";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator xros xrsimulator";
+				SUPPORTS_MACCATALYST = YES;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				USER_HEADER_SEARCH_PATHS = "\"$(PROJECT_DIR)/joe/joe $(PROJECT_DIR)/ios_system\"";
+			};
+			name = Debug;
+		};
+		47076C8E2EE0D7BE0012B882 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CODE_SIGN_IDENTITY = "";
+				CODE_SIGN_STYLE = Automatic;
+				DEFINES_MODULE = YES;
+				DEVELOPMENT_TEAM = VG8Z23C8YL;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				HEADER_SEARCH_PATHS = "";
+				INFOPLIST_FILE = joe_framework/Info.plist;
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				OTHER_CFLAGS = (
+					"-Wshorten-64-to-32",
+					"-Wno-ambiguous-macro",
+					"-Wunused-const-variable",
+					"-Wincompatible-pointer-types-discards-qualifiers",
+					"-I",
+					ios_system/,
+				);
+				OTHER_LDFLAGS = (
+					"-Xlinker",
+					"-no_fixup_chains",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "Nicolas-Holzschuch.joe";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator xros xrsimulator";
+				SUPPORTS_MACCATALYST = YES;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				USER_HEADER_SEARCH_PATHS = "\"$(PROJECT_DIR)/joe/joe $(PROJECT_DIR)/ios_system\"";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -5744,6 +6022,15 @@
 			buildConfigurations = (
 				22F6A1B520683F4100E618F9 /* Debug */,
 				22F6A1B620683F4100E618F9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		47076C8C2EE0D7BE0012B882 /* Build configuration list for PBXNativeTarget "joe" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				47076C8D2EE0D7BE0012B882 /* Debug */,
+				47076C8E2EE0D7BE0012B882 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

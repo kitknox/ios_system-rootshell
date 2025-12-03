@@ -184,6 +184,13 @@
 		<string>n:c:</string>
 		<string>file</string>
 	</array>
+	<key>joe</key>
+	<array>
+		<string>joe.framework/joe</string>
+		<string>joe_main</string>
+		<string>+ckmnopqrstvwxyz</string>
+		<string>file</string>
+	</array>
 	<key>host</key>
 	<array>
 		<string>network_ios.framework/network_ios</string>

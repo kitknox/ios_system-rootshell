@@ -17,6 +17,7 @@ let allSchemes = [
     "awk",
     "curl_ios",
     "files",
+    "joe",
     "shell",
     "ssh_cmd",
     "ssh_cmdA",
