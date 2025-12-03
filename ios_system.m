@@ -11,7 +11,6 @@
 #include "ios_session_manager.h"
 #include "ios_env_manager.h"
 #include "ios_interpreter_pool.h"
-#include "ios_thread_pool.h"
 #include "ios_buffered_pipe.h"
 #include "ios_pipeline.h"
 
@@ -32,7 +31,6 @@
 #include <libgen.h> // for basename()
 #include <dlfcn.h>  // for dlopen()/dlsym()/dlclose()
 #include <glob.h>   // for wildcard expansion
-#include <setjmp.h> // for setjmp/longjmp in worker threads
 // Sideloading: when you compile yourself, as opposed to uploading on the app store
 // If true, all commands are enabled + debug messages if dylib not found.
 // If false, you get a smaller set, but compliance with AppStore rules.
@@ -50,26 +48,11 @@ static NSString* ios_bookmarkDictionaryName = @"bookmarkNames";
 static struct rlimit limitFilesOpen;
 extern void display_alert(NSString* title, NSString* message);
 
-// Global thread pool for command execution
-static ios_thread_pool_t* g_command_pool = NULL;
-static pthread_once_t pool_init_once = PTHREAD_ONCE_INIT;
-
-static void init_command_pool(void) {
-    g_command_pool = ios_thread_pool_create_default();
-    if (g_command_pool == NULL) {
-        NSLog(@"[ios_system] ERROR: Failed to create command thread pool");
-    }
-}
-
 extern __thread int    __db_getopt_reset;
 __thread FILE* thread_stdin;
 __thread FILE* thread_stdout;
 __thread FILE* thread_stderr;
 __thread void* thread_context;
-
-// Thread pool exit handling: use longjmp instead of pthread_exit to preserve worker threads
-__thread jmp_buf exit_jmp_buf;
-__thread int in_worker_thread = 0;
 
 FILE* ios_stdin(void) {
     return thread_stdin;
@@ -215,13 +198,9 @@ void ios_exit(int n) {
         currentSession->global_errno = n;
     }
 
-    // If we're in a thread pool worker, use longjmp to return from command
-    // without killing the worker thread. Otherwise use pthread_exit for legacy behavior.
-    if (in_worker_thread) {
-        longjmp(exit_jmp_buf, n != 0 ? n : 1);
-    } else {
-        pthread_exit(NULL);
-    }
+    // Use pthread_exit - each command runs in its own fresh thread
+    // Thread-local state is automatically cleaned up when thread exits
+    pthread_exit(NULL);
 }
 
 void set_session_errno(int n) {
@@ -387,7 +366,7 @@ typedef struct _functionParameters {
     bool backgroundCommand;
     int  numInterpreter;                          // Legacy: slot number for backward compat
     ios_interp_slot_handle_t* interp_handle;     // New: thread-safe interpreter slot handle
-    ios_work_item_t* work_item;                  // Thread pool work item handle
+    pthread_t thread_id;                          // Thread running this command
     bool storeRootThread;
     sessionParameters* session;
     pid_t pid;                                    // Thread-local pid for this command
@@ -403,7 +382,7 @@ static void cleanup_function(void* parameters) {
     // This function is called when pthread_exit() or ios_kill() is called
     pthread_t current_thread = pthread_self();
     functionParameters *p = (functionParameters *) parameters;
-    NSLog(@"[cleanup_function] ENTRY: parameters=%p work_item=%p", parameters, p->work_item);
+    NSLog(@"[cleanup_function] ENTRY: parameters=%p", parameters);
     bool backgroundCommand = p->backgroundCommand;
     char* commandName = p->argv[0];
     char* currentSessionCommandName = NULL;
@@ -572,13 +551,6 @@ static void cleanup_function(void* parameters) {
         && (p->dlHandle != RTLD_DEFAULT) && (p->dlHandle != RTLD_NEXT))
         dlclose(p->dlHandle);
 
-    // Mark work item as complete BEFORE freeing parameters!
-    // This is critical when pthread_exit() is called - the worker thread won't return normally
-    if (p->work_item != NULL) {
-        NSLog(@"[cleanup_function] Marking work item %p as complete", p->work_item);
-        ios_work_complete(p->work_item, NULL);
-    }
-
     free(parameters); // This was malloc'ed in ios_system
     if (isLastThread) {
         NSLog(@"Terminating lastthread of currentSession %x lastThreadId %x pid: %d\n", current_thread, currentSession->lastThreadId, ios_currentPid());
@@ -631,11 +603,6 @@ void crash_handler(int sig) {
 static void* run_function(void* parameters) {
     functionParameters *p = (functionParameters *) parameters;
 
-    // Get current work item from TLS and store in params
-    // This must be done first, before any code that might call exit/pthread_exit
-    p->work_item = ios_work_get_current();
-    NSLog(@"[run_function] Got work_item from TLS: %p", p->work_item);
-
     // Set thread-local pid from parameters (passed from calling thread)
     ios_setCurrentPid(p->pid);
 
@@ -675,33 +642,25 @@ static void* run_function(void* parameters) {
     // Because some commands change argv, keep a local copy for release.
     p->argv_ref = (char **)malloc(sizeof(char*) * (p->argc + 1));
     for (int i = 0; i < p->argc; i++) p->argv_ref[i] = p->argv[i];
-    NSLog(@"[run_function] About to push cleanup, p=%p parameters=%p work_item=%p", p, parameters, p->work_item);
+    NSLog(@"[run_function] About to push cleanup, p=%p parameters=%p", p, parameters);
     pthread_cleanup_push(cleanup_function, parameters);
 
-    // Set up longjmp target for ios_exit() to preserve worker thread
-    in_worker_thread = 1;
-    int exit_code = setjmp(exit_jmp_buf);
-
-    if (exit_code == 0) {
-        // Normal execution path: run the command
-        @try
-        {
-            int retval = p->function(p->argc, p->argv);
-            if (currentSession != nil) currentSession->global_errno = retval;
-        }
-        @catch (NSException *exception)
-        {
-          // Print exception information.
-          NSLog( @"NSException caught" );
-          NSLog( @"Name: %@", exception.name);
-          NSLog( @"Reason: %@", exception.reason );
-            fprintf(thread_stderr, "Command %s was interrupted because it triggered a system exception: %s: %s\n", p->argv[0], exception.name.UTF8String, exception.reason.UTF8String);
-        }
+    // Run the command - each command gets a fresh thread, so no longjmp needed
+    // If the command calls exit(), pthread_exit() is used and cleanup runs
+    @try
+    {
+        int retval = p->function(p->argc, p->argv);
+        if (currentSession != nil) currentSession->global_errno = retval;
     }
-    // If exit_code != 0, we got here via longjmp from ios_exit()
-    // errno was already set by ios_exit(), just cleanup and return
+    @catch (NSException *exception)
+    {
+      // Print exception information.
+      NSLog( @"NSException caught" );
+      NSLog( @"Name: %@", exception.name);
+      NSLog( @"Reason: %@", exception.reason );
+        fprintf(thread_stderr, "Command %s was interrupted because it triggered a system exception: %s: %s\n", p->argv[0], exception.name.UTF8String, exception.reason.UTF8String);
+    }
 
-    in_worker_thread = 0;
     pthread_cleanup_pop(1);  // Always call cleanup
     return NULL;
 }
@@ -4021,69 +3980,48 @@ int ios_system(const char* inputCmd) {
                 // In concurrent execution, each session manages its own directory
                 currentSession->isMainThread = false;
 
-                // Initialize thread pool (lazy, thread-safe)
-                pthread_once(&pool_init_once, init_command_pool);
-
-                // Submit work to thread pool
-                ios_work_item_t* work = ios_thread_pool_submit(
-                            g_command_pool,
-                            run_function,
-                            params,
-                            currentSession->isMainThread ? IOS_PRIORITY_HIGH : IOS_PRIORITY_NORMAL
-                        );
-
-                        if (work == NULL) {
-                            NSLog(@"[ios_system] ERROR: Failed to submit command to thread pool");
-                            currentSession->isMainThread = true;
-                            return currentSession->global_errno;
-                        }
-
-                        // Note: work_item is now set by run_function via TLS, not here (avoids race)
+                // Create a fresh thread for this command
+                // Using fresh threads avoids thread-local state accumulation issues
+                pthread_t cmd_thread;
+                int thread_err = pthread_create(&cmd_thread, NULL, run_function, params);
+                if (thread_err != 0) {
+                    NSLog(@"[ios_system] ERROR: Failed to create thread for command: %d", thread_err);
+                    currentSession->isMainThread = true;
+                    free(params);
+                    return currentSession->global_errno;
+                }
+                params->thread_id = cmd_thread;
 
                 // Wait for this process to finish if joinMainThread is set:
                 if (joinMainThread) {
-                    ios_work_wait(work, NULL);
-                    // If there are auxiliary process, also wait for them:
+                    pthread_join(cmd_thread, NULL);
+                    // If there are auxiliary processes, also wait for them:
                     if (currentSession->lastThreadId > 0) pthread_join(currentSession->lastThreadId, NULL);
                     currentSession->lastThreadId = 0;
                     currentSession->current_command_root_thread = 0;
-                    ios_work_release(work);
                 }
-                // else: work item runs asynchronously, will be released in cleanup
+                // else: thread runs asynchronously, cleanup happens when thread exits
 
                 currentSession->isMainThread = true;
             } else {
                 NSLog(@"Starting command %s, global_errno= %d\n", command, currentSession->global_errno);
                 // Don't send signal if not in main thread. Also, don't join threads.
 
-                // Initialize thread pool (lazy, thread-safe)
-                pthread_once(&pool_init_once, init_command_pool);
+                // Create a fresh thread for this command (piped/background)
+                pthread_t cmd_thread;
+                pthread_attr_t attr;
+                pthread_attr_init(&attr);
+                pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 
-                // Submit work to thread pool (lower priority for piped/background commands)
-                ios_work_item_t* work = ios_thread_pool_submit(
-                    g_command_pool,
-                    run_function,
-                    params,
-                    params->backgroundCommand ? IOS_PRIORITY_LOW : IOS_PRIORITY_NORMAL
-                );
+                int thread_err = pthread_create(&cmd_thread, &attr, run_function, params);
+                pthread_attr_destroy(&attr);
 
-                if (work == NULL) {
-                    NSLog(@"[ios_system] ERROR: Failed to submit piped/background command to thread pool");
+                if (thread_err != 0) {
+                    NSLog(@"[ios_system] ERROR: Failed to create thread for piped/background command: %d", thread_err);
+                    free(params);
                     return currentSession->global_errno;
                 }
-
-                // Note: work_item is now set by run_function via TLS, not here (avoids race)
-
-                // For piped commands: first command created will be joined later
-                // Other commands run detached
-                if (currentSession->lastThreadId == 0) {
-                    // This is the last command in a pipe, will be joined later
-                    // Store work item so we can wait for it
-                    // Note: pthread_t lastThreadId is still used for compatibility
-                } else {
-                    // Intermediate command in pipe, runs detached
-                    // Work item will be released in cleanup_function
-                }
+                params->thread_id = cmd_thread;
             }
         } else {
             fprintf(params->stderr, "%s: command not found\n", argv[0]);
