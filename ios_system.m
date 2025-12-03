@@ -45,6 +45,8 @@ bool joinMainThread = true;
 static NSString* ios_bookmarkDictionaryName = @"bookmarkNames";
 // Include file for getrlimit/setrlimit:
 #include <sys/resource.h>
+// Include file for ioctl/TIOCGWINSZ:
+#include <sys/ioctl.h>
 static struct rlimit limitFilesOpen;
 extern void display_alert(NSString* title, NSString* message);
 
@@ -2405,6 +2407,40 @@ int ios_isatty(int fd) {
             return (fileno(thread_stderr) == fileno(currentSession->stderr));
     }
     return 0;
+}
+
+// Helper to check if fd is one of our session's terminal file descriptors
+static int ios_is_terminal_fd(int fd) {
+    if (currentSession == NULL) return 0;
+    if (fd == STDIN_FILENO || fd == STDOUT_FILENO || fd == STDERR_FILENO) return 1;
+    if (thread_stdin != NULL && fd == fileno(thread_stdin)) return 1;
+    if (thread_stdout != NULL && fd == fileno(thread_stdout)) return 1;
+    if (thread_stderr != NULL && fd == fileno(thread_stderr)) return 1;
+    if (currentSession->stdin != NULL && fd == fileno(currentSession->stdin)) return 1;
+    if (currentSession->stdout != NULL && fd == fileno(currentSession->stdout)) return 1;
+    if (currentSession->stderr != NULL && fd == fileno(currentSession->stderr)) return 1;
+    if (currentSession->tty != NULL && fd == fileno(currentSession->tty)) return 1;
+    return 0;
+}
+
+// Intercept ioctl to handle TIOCGWINSZ for terminal size queries
+// This allows programs like joe, vim, less to get correct window size
+// even when running through pipes instead of real PTYs
+int ios_ioctl(int fd, unsigned long request, void* arg) {
+    // Only intercept TIOCGWINSZ on terminal-related file descriptors
+    if (request == TIOCGWINSZ && currentSession != NULL && ios_is_terminal_fd(fd)) {
+        struct winsize* ws = (struct winsize*)arg;
+        if (ws != NULL) {
+            // Fill in window size from session's stored values
+            ws->ws_col = (unsigned short)atoi(currentSession->columns);
+            ws->ws_row = (unsigned short)atoi(currentSession->lines);
+            ws->ws_xpixel = 0;
+            ws->ws_ypixel = 0;
+            return 0;  // Success
+        }
+    }
+    // For all other cases, call the real ioctl
+    return ioctl(fd, request, arg);
 }
 
 void ios_setStreams(FILE* _stdin, FILE* _stdout, FILE* _stderr) {
