@@ -123,4 +123,4 @@ extern int regexp_flags;
 extern int exitstatus;
 extern time_t now;
 extern int dotfd;
-extern FTS *tree;
+extern __thread FTS *tree;

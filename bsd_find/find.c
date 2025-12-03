@@ -167,7 +167,7 @@ find_formplan(char *argv[])
 	return (plan);
 }
 
-FTS *tree;			/* pointer to top of FTS hierarchy */
+__thread FTS *tree;		/* pointer to top of FTS hierarchy - thread-local for concurrent execution */
 
 /*
  * find_execute --
@@ -249,6 +249,10 @@ find_execute(PLAN *plan, char *paths[])
 	}
 	e = errno;
 	finish_execplus();
+	if (tree != NULL) {
+		fts_close(tree);
+		tree = NULL;
+	}
 	if (e && (!ignore_readdir_race || e != ENOENT))
 		errc(1, e, "fts_read");
 	return (exitstatus);
