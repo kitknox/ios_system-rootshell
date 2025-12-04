@@ -189,6 +189,10 @@ static int currentSshCommand = 0;
 // prevent the user from running multiple curl commands too:
 static bool curlIsRunning = false;
 
+// Command resolution cache: commandName → resolved info
+// Caches dlopen handles, function pointers, and PATH search results
+// Invalidated only on app restart (in-memory only)
+static NSMutableDictionary<NSString*, NSDictionary*>* commandResolutionCache = nil;
 
 // pointers for sh sessions:
 char* sh_session = "sh_session";
@@ -991,6 +995,10 @@ static void initializeCommandList(void)
         NSMutableDictionary *mutableDict = [commandList mutableCopy];
         [mutableDict addEntriesFromDictionary:extraCommandList];
         commandList = [mutableDict copy];
+    }
+    // Initialize command resolution cache
+    if (commandResolutionCache == nil) {
+        commandResolutionCache = [[NSMutableDictionary alloc] initWithCapacity:100];
     }
 }
 
@@ -3661,6 +3669,7 @@ int ios_system(const char* inputCmd) {
         // We've reached this point: either the command is a file, from a script we support,
         // and we have inserted the name of the script at the beginning, or it is a builtin command
         int (*function)(int ac, char** av) = NULL;
+        void* handle = NULL;
         if (commandList == nil) initializeCommandList();
         NSString* commandName = [NSString stringWithCString:argv[0] encoding:NSUTF8StringEncoding];
         if ([commandName isEqualToString:@"sh"]) {
@@ -3686,9 +3695,32 @@ int ios_system(const char* inputCmd) {
             }
         }
         //
+        // Check command resolution cache first (for non-interpreter commands)
+        NSDictionary* cachedCmd = commandResolutionCache[commandName];
+        bool usedCache = false;
+        if (cachedCmd != nil && [cachedCmd[@"type"] isEqualToString:@"builtin"]) {
+            // Don't use cache for special multi-instance commands
+            if (![commandName hasPrefix:@"python"] &&
+                ![commandName hasPrefix:@"perl"] &&
+                ![commandName hasPrefix:@"tex"] &&
+                ![commandName hasPrefix:@"latex"] &&
+                ![commandName isEqualToString:@"dash"] &&
+                ![commandName isEqualToString:@"sh"] &&
+                ![commandName hasPrefix:@"ssh"] &&
+                ![commandName isEqualToString:@"curl"]) {
+                void* cachedHandle = [cachedCmd[@"handle"] pointerValue];
+                void* cachedFunc = [cachedCmd[@"funcPtr"] pointerValue];
+                if (cachedFunc != NULL) {
+                    function = cachedFunc;
+                    handle = cachedHandle;
+                    usedCache = true;
+                    NSLog(@"Cache hit for command: %s", commandName.UTF8String);
+                }
+            }
+        }
+
         NSArray* commandStructure = [commandList objectForKey: commandName];
-        void* handle = NULL;
-        if (commandStructure != nil) {
+        if (!usedCache && commandStructure != nil) {
             NSString* libraryName = commandStructure[0];
             NSString* functionName = commandStructure[1];
             // Python, Perl and TeX can have multiple commands calling themselves:
@@ -3945,6 +3977,25 @@ int ios_system(const char* inputCmd) {
                         fprintf(thread_stderr, "Failed loading %s from %s, cause = %s\n", functionName.UTF8String, libraryName.UTF8String, errorLoading);
                         NSLog(@"Failed loading %s from %s, cause = %s\n", commandName.UTF8String, libraryName.UTF8String, errorLoading);
                         free(errorLoading);
+                    } else {
+                        // Cache successful resolution for non-special commands
+                        if (![commandName hasPrefix:@"python"] &&
+                            ![commandName hasPrefix:@"perl"] &&
+                            ![commandName hasPrefix:@"tex"] &&
+                            ![commandName hasPrefix:@"latex"] &&
+                            ![commandName isEqualToString:@"dash"] &&
+                            ![commandName isEqualToString:@"sh"] &&
+                            ![commandName hasPrefix:@"ssh"] &&
+                            ![commandName isEqualToString:@"curl"]) {
+                            commandResolutionCache[commandName] = @{
+                                @"type": @"builtin",
+                                @"library": libraryName,
+                                @"function": functionName,
+                                @"handle": [NSValue valueWithPointer:handle],
+                                @"funcPtr": [NSValue valueWithPointer:function]
+                            };
+                            NSLog(@"Cached command: %s", commandName.UTF8String);
+                        }
                     }
                 }
             }
@@ -3973,34 +4024,18 @@ int ios_system(const char* inputCmd) {
             params->storeRootThread = false;
             // params->session = currentSession;
             params->pid = ios_currentPid(); // Pass pid to worker thread
-            // Before starting, do we have enough file descriptors available?
-            int numFileDescriptorsOpen = 0;
-            bool debugPath = false; // to understand where the file descr was allocated
-            for (int fd = 0; fd < limitFilesOpen.rlim_cur; fd++) {
-                errno = 0;
-                int flags = fcntl(fd, F_GETFD, 0);
-                if (flags == -1 && errno) {
-                    continue;
-                }
-                if (debugPath) {
-                    char filePath[MAXPATHLEN];
-                    if (fcntl(fd, F_GETPATH, filePath) >= 0)
-                        NSLog(@"Descriptor still open = %d path= %s\n", fd, filePath);
-                    else
-                        NSLog(@"Descriptor still open = %d (no path)\n", fd);
-                }
-                ++numFileDescriptorsOpen ;
-            }
-            NSLog(@"\nNum file descriptors opened = %d limit= %llu\n", numFileDescriptorsOpen, limitFilesOpen.rlim_cur);
-            // fprintf(stderr, "Num file descriptor = %d\n", numFileDescriptorsOpen);
-            // We assume 128 file descriptors will be enough for a single command.
-            if (numFileDescriptorsOpen + 128 > limitFilesOpen.rlim_cur) {
-                limitFilesOpen.rlim_cur += 1024;
-                int res = setrlimit(RLIMIT_NOFILE, &limitFilesOpen);
-                // Check the result:
+            // Ensure sufficient file descriptor capacity (optimized: no per-command counting)
+            // Set a high limit once rather than iterating through all FDs every command
+            static bool fdLimitInitialized = false;
+            if (!fdLimitInitialized) {
+                // Set a generous initial limit to avoid needing to increase later
                 getrlimit(RLIMIT_NOFILE, &limitFilesOpen);
-                if (res == 0) NSLog(@"[Info] Increased file descriptors limit to = %llu OPEN_MAX= %d\n", limitFilesOpen.rlim_cur, OPEN_MAX);
-                else NSLog(@"[Warning] Failed to increased file descriptors limit to = %llu\n", limitFilesOpen.rlim_cur);
+                if (limitFilesOpen.rlim_cur < 4096) {
+                    limitFilesOpen.rlim_cur = MIN(4096, limitFilesOpen.rlim_max);
+                    setrlimit(RLIMIT_NOFILE, &limitFilesOpen);
+                    NSLog(@"[Info] Set file descriptors limit to = %llu\n", limitFilesOpen.rlim_cur);
+                }
+                fdLimitInitialized = true;
             }
             NSLog(@"Starting command: %s, currentSession->isMainThread: %d", commandName.UTF8String, currentSession->isMainThread);
             if ([commandName isEqualToString:@"wasm"])
