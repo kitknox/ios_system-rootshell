@@ -179,21 +179,21 @@ du_main(int argc, char *argv[])
 				cflag = 1;
 				break;
 			case 'h':
-				putenv("BLOCKSIZE=512");
+				setenv("BLOCKSIZE", "512", 1);
 				hflag = 1;
 				valp = vals_base2;
 				break;
 			case 'k':
 				hflag = 0;
-				putenv("BLOCKSIZE=1024");
+				setenv("BLOCKSIZE", "1024", 1);
 				break;
 			case 'm':
 				hflag = 0;
-				putenv("BLOCKSIZE=1048576");
+				setenv("BLOCKSIZE", "1048576", 1);
 				break;
 			case 'g':
 				hflag = 0;
-				putenv("BLOCKSIZE=1g");
+				setenv("BLOCKSIZE", "1g", 1);
 				break;
 			case 'r':		 /* Compatibility. */
 				break;
@@ -688,6 +688,7 @@ prthumanval(double bytes)
 		(void)fprintf(thread_stdout, "%3.0f%c", bytes, "BKMGTPE"[unit]);
 	else
 		(void)fprintf(thread_stdout, "%3.1f%c", bytes, "BKMGTPE"[unit]);
+	fflush(thread_stdout);
 }
 
 static void
