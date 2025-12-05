@@ -12,6 +12,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <signal.h>
+#include <unistd.h>
 
 // Maximum stages in a pipeline
 #define MAX_PIPELINE_STAGES 32
@@ -22,11 +23,14 @@ struct _ios_pipeline_stage {
     FILE* stdin_stream;                     // Input stream
     FILE* stdout_stream;                    // Output stream
     FILE* stderr_stream;                    // Error stream
-    ios_buffered_pipe_t* output_pipe;       // Pipe to next stage (if any)
+    int pipe_to_next[2];                    // POSIX pipe to next stage [read_fd, write_fd]
     pthread_t thread_id;                    // Thread ID
     _Atomic(ios_pipeline_stage_status_t) status;  // Current status
     _Atomic(int) exit_code;                 // Exit code when completed
     void* session;                          // Session context
+    bool stdin_is_external;                 // true if provided by caller, don't close
+    bool stdout_is_external;                // true if provided by caller, don't close
+    bool stderr_is_external;                // true if provided by caller, don't close
 };
 
 // Pipeline structure
@@ -53,27 +57,64 @@ static void* pipeline_stage_thread(void* arg) {
     atomic_store(&stage->status, IOS_STAGE_RUNNING);
 
     // Execute the command with redirected I/O
-    // Note: ios_system will use the thread-local streams
+    // ios_system uses both child_* and thread_* variables:
+    // - child_* are used to set up params->stdin/stdout/stderr (primary)
+    // - thread_* are fallbacks and used during command execution
     extern __thread FILE* thread_stdin;
     extern __thread FILE* thread_stdout;
     extern __thread FILE* thread_stderr;
 
+    // Set child streams (for params setup) via the exported function
+    extern void ios_setChildStreams(FILE*, FILE*, FILE*);
+    ios_setChildStreams(stage->stdin_stream, stage->stdout_stream, stage->stderr_stream);
+
+    // Also set thread streams (for execution fallback)
     thread_stdin = stage->stdin_stream;
     thread_stdout = stage->stdout_stream;
     thread_stderr = stage->stderr_stream;
 
+    // Force ios_system to wait for command completion (otherwise it creates a detached
+    // thread and returns immediately, but we need the command to finish before we can
+    // clean up streams)
+    extern bool joinMainThread;
+    bool savedJoinMainThread = joinMainThread;
+    joinMainThread = true;
+
     int result = ios_system(stage->command);
 
-    // Close output streams (but not stdin - that's owned by previous stage)
-    if (stage->stdout_stream && stage->stdout_stream != stdout) {
+    joinMainThread = savedJoinMainThread;
+
+    // Clear child streams after command completes (ios_system may have already done this)
+    ios_setChildStreams(NULL, NULL, NULL);
+
+    // Flush all output streams first to ensure data is written
+    if (stage->stdout_stream) {
+        fflush(stage->stdout_stream);
+    }
+    if (stage->stderr_stream && stage->stderr_stream != stage->stdout_stream) {
+        fflush(stage->stderr_stream);
+    }
+
+    // Close only internally-created streams (buffered pipes between stages)
+    // External streams (provided by caller) must NOT be closed here
+    if (stage->stdout_stream && !stage->stdout_is_external &&
+        stage->stdout_stream != stdout) {
         fclose(stage->stdout_stream);
         stage->stdout_stream = NULL;
     }
 
-    if (stage->stderr_stream && stage->stderr_stream != stderr &&
+    if (stage->stderr_stream && !stage->stderr_is_external &&
+        stage->stderr_stream != stderr &&
         stage->stderr_stream != stage->stdout_stream) {
         fclose(stage->stderr_stream);
         stage->stderr_stream = NULL;
+    }
+
+    // Close stdin if it was created internally (read end of previous stage's pipe)
+    if (stage->stdin_stream && !stage->stdin_is_external &&
+        stage->stdin_stream != stdin) {
+        fclose(stage->stdin_stream);
+        stage->stdin_stream = NULL;
     }
 
     // Update status and exit code
@@ -185,37 +226,61 @@ ios_pipeline_t* ios_pipeline_execute(const char* command, const ios_pipeline_opt
         stage->session = options->session;
         atomic_init(&stage->status, IOS_STAGE_PENDING);
         atomic_init(&stage->exit_code, 0);
-        stage->output_pipe = NULL;
+        stage->pipe_to_next[0] = -1;
+        stage->pipe_to_next[1] = -1;
         stage->thread_id = 0;
 
         // Set up stdin
         if (i == 0) {
             // First stage: use provided input or stdin
             stage->stdin_stream = options->input ? options->input : stdin;
+            stage->stdin_is_external = true;  // Provided by caller, don't close
         } else {
-            // Read from previous stage's output pipe
-            stage->stdin_stream = ios_pipe_fdopen_read(pipeline->stages[i-1].output_pipe);
+            // Read from previous stage's POSIX pipe (read end)
+            int prev_read_fd = pipeline->stages[i-1].pipe_to_next[0];
+            stage->stdin_stream = fdopen(prev_read_fd, "r");
+            if (!stage->stdin_stream) {
+                fprintf(stderr, "[ios_pipeline] Failed to fdopen read end of pipe for stage %d\n", i);
+            } else {
+                // Mark FD as transferred to FILE* (fclose will close it)
+                pipeline->stages[i-1].pipe_to_next[0] = -1;
+            }
+            stage->stdin_is_external = false;  // We created this, we close it
         }
 
         // Set up stdout
         if (i == pipeline->num_stages - 1) {
             // Last stage: use provided output or stdout
             stage->stdout_stream = options->output ? options->output : stdout;
+            stage->stdout_is_external = true;  // Provided by caller, don't close
         } else {
-            // Create pipe to next stage
-            stage->output_pipe = ios_pipe_create_default();
-            if (!stage->output_pipe) {
+            // Create POSIX pipe to next stage
+            if (pipe(stage->pipe_to_next) != 0) {
+                fprintf(stderr, "[ios_pipeline] Failed to create pipe for stage %d\n", i);
                 // Cleanup and fail
-                for (int j = 0; j <= i; j++) {
+                for (int j = 0; j < i; j++) {
                     free(pipeline->stages[j].command);
-                    if (pipeline->stages[j].output_pipe) {
-                        ios_pipe_destroy(pipeline->stages[j].output_pipe);
+                    if (pipeline->stages[j].pipe_to_next[0] >= 0) {
+                        close(pipeline->stages[j].pipe_to_next[0]);
+                    }
+                    if (pipeline->stages[j].pipe_to_next[1] >= 0) {
+                        close(pipeline->stages[j].pipe_to_next[1]);
                     }
                 }
+                free(pipeline->stages[i].command);
                 free(pipeline);
                 return NULL;
             }
-            stage->stdout_stream = ios_pipe_fdopen_write(stage->output_pipe);
+            // pipe_to_next[0] = read end (for next stage's stdin)
+            // pipe_to_next[1] = write end (for this stage's stdout)
+            stage->stdout_stream = fdopen(stage->pipe_to_next[1], "w");
+            if (!stage->stdout_stream) {
+                fprintf(stderr, "[ios_pipeline] Failed to fdopen write end of pipe for stage %d\n", i);
+            } else {
+                // Mark FD as transferred to FILE* (fclose will close it)
+                stage->pipe_to_next[1] = -1;
+            }
+            stage->stdout_is_external = false;  // We created this, we close it
         }
 
         // Set up stderr
@@ -223,12 +288,15 @@ ios_pipeline_t* ios_pipeline_execute(const char* command, const ios_pipeline_opt
             // Share stderr with stdout, or use provided error stream for last stage
             if (i == pipeline->num_stages - 1 && options->error) {
                 stage->stderr_stream = options->error;
+                stage->stderr_is_external = true;  // Provided by caller, don't close
             } else {
                 stage->stderr_stream = stage->stdout_stream;
+                stage->stderr_is_external = stage->stdout_is_external;  // Inherits from stdout
             }
         } else {
             // Each stage gets its own stderr (TODO: could be optimized)
             stage->stderr_stream = options->error ? options->error : stderr;
+            stage->stderr_is_external = (options->error != NULL);  // External if provided
         }
     }
 
@@ -365,8 +433,16 @@ void ios_pipeline_destroy(ios_pipeline_t* pipeline) {
             free(stage->command);
         }
 
-        if (stage->output_pipe) {
-            ios_pipe_destroy(stage->output_pipe);
+        // Close any remaining pipe file descriptors
+        // Note: fclose() in stage cleanup already closes the FDs via fdopen
+        // but we close remaining unclaimed FDs here just in case
+        if (stage->pipe_to_next[0] >= 0) {
+            close(stage->pipe_to_next[0]);
+            stage->pipe_to_next[0] = -1;
+        }
+        if (stage->pipe_to_next[1] >= 0) {
+            close(stage->pipe_to_next[1]);
+            stage->pipe_to_next[1] = -1;
         }
     }
 

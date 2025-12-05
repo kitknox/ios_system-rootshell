@@ -679,6 +679,9 @@ NSArray *backgroundCommandList = nil;
 static NSString* fullCommandPath = @"";
 static NSArray *directoriesInPath;
 
+// Mutex to protect global state during parallel pipeline execution
+static pthread_mutex_t ios_system_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 void initializeEnvironment(void) {
     // setup a few useful environment variables
     // Initialize paths for application files, including history.txt and keys
@@ -2462,6 +2465,14 @@ void ios_setStreams(FILE* _stdin, FILE* _stdout, FILE* _stderr) {
     thread_stderr = _stderr;
 }
 
+void ios_setChildStreams(FILE* _stdin, FILE* _stdout, FILE* _stderr) {
+    // Set child streams directly - used by pipeline stages to redirect I/O
+    // These are used by ios_system() to set up params->stdin/stdout/stderr
+    child_stdin = _stdin;
+    child_stdout = _stdout;
+    child_stderr = _stderr;
+}
+
 void ios_settty(FILE* _tty) {
     if (currentSession == NULL) return;
     currentSession->tty = _tty;
@@ -2915,6 +2926,10 @@ NSString* beforeScriptCommandName(NSString* scriptName) {
 int ios_system(const char* inputCmd) {
     NSLog(@"command = %s pid= %d\n", inputCmd, ios_currentPid());
 
+    // Lock mutex to protect global state (fullCommandPath, directoriesInPath, etc.)
+    // during parallel pipeline execution
+    pthread_mutex_lock(&ios_system_mutex);
+
     char* command;
     // The names of the files for stdin, stdout, stderr
     char* inputFileName = 0;
@@ -2944,6 +2959,7 @@ int ios_system(const char* inputCmd) {
     // Don't start if the command is NULL:
     if (inputCmd == NULL) {
         ios_storeThreadId(0);
+        pthread_mutex_unlock(&ios_system_mutex);
         return 0;
     }
 
@@ -3091,6 +3107,10 @@ int ios_system(const char* inputCmd) {
             .session = currentSession
         };
 
+        // Unlock mutex before pipeline execution - pipeline stages will call ios_system()
+        // and need to acquire the mutex themselves
+        pthread_mutex_unlock(&ios_system_mutex);
+
         ios_pipeline_t* pipeline = ios_pipeline_execute(command, &pipeline_opts);
         if (!pipeline) {
             NSLog(@"[ios_system] Pipeline creation failed");
@@ -3114,6 +3134,7 @@ int ios_system(const char* inputCmd) {
     functionParameters *params = (functionParameters*) malloc(sizeof(functionParameters));
     if (params == NULL) {
         NSLog(@"Unable to allocate params in ios_system");
+        pthread_mutex_unlock(&ios_system_mutex);
         return -1;
     }
     // If child_streams have been defined (in dup2 or popen), the new thread takes them.
@@ -3121,7 +3142,6 @@ int ios_system(const char* inputCmd) {
     params->stdout = child_stdout;
     params->stderr = child_stderr;
     params->session = currentSession;
-    NSLog(@"After params creation, stdout %x stderr %x \n", params->stdout,  params->stderr);
     params->backgroundCommand = isBackgroundCommand(command);
     params->numInterpreter = 0;
 
@@ -3176,6 +3196,7 @@ int ios_system(const char* inputCmd) {
                 ios_storeThreadId(0);
                 free(params);
                 free(originalCommand); // releases cmd, which was a strdup of inputCommand
+                pthread_mutex_unlock(&ios_system_mutex);
                 return currentSession->global_errno;
             }
         } else {
@@ -3194,6 +3215,7 @@ int ios_system(const char* inputCmd) {
                     ios_storeThreadId(0);
                     free(params);
                     free(originalCommand); // releases cmd, which was a strdup of inputCommand
+                    pthread_mutex_unlock(&ios_system_mutex);
                     return currentSession->global_errno;
                 }
             }
@@ -4054,6 +4076,11 @@ int ios_system(const char* inputCmd) {
                 // Create a fresh thread for this command
                 // Using fresh threads avoids thread-local state accumulation issues
                 pthread_t cmd_thread;
+
+                // Unlock mutex before creating command thread - setup is done,
+                // command execution should not block other commands
+                pthread_mutex_unlock(&ios_system_mutex);
+
                 int thread_err = pthread_create(&cmd_thread, NULL, run_function, params);
                 if (thread_err != 0) {
                     NSLog(@"[ios_system] ERROR: Failed to create thread for command: %d", thread_err);
@@ -4074,15 +4101,27 @@ int ios_system(const char* inputCmd) {
                 // else: thread runs asynchronously, cleanup happens when thread exits
 
                 currentSession->isMainThread = true;
+                // Mutex already unlocked above, just return
+                return currentSession->global_errno;
             } else {
                 NSLog(@"Starting command %s, global_errno= %d\n", command, currentSession->global_errno);
-                // Don't send signal if not in main thread. Also, don't join threads.
+                // Don't send signal if not in main thread. Also, don't join threads
+                // unless joinMainThread is set (e.g., for pipeline stages that need
+                // synchronous completion before stream cleanup).
 
                 // Create a fresh thread for this command (piped/background)
                 pthread_t cmd_thread;
                 pthread_attr_t attr;
                 pthread_attr_init(&attr);
-                pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+
+                // Only make detached if we're not going to wait
+                if (!joinMainThread) {
+                    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+                }
+
+                // Unlock mutex before creating command thread - setup is done,
+                // command execution should not block other commands
+                pthread_mutex_unlock(&ios_system_mutex);
 
                 int thread_err = pthread_create(&cmd_thread, &attr, run_function, params);
                 pthread_attr_destroy(&attr);
@@ -4093,6 +4132,14 @@ int ios_system(const char* inputCmd) {
                     return currentSession->global_errno;
                 }
                 params->thread_id = cmd_thread;
+
+                // Wait for completion if joinMainThread is set (needed for pipeline stages)
+                if (joinMainThread) {
+                    pthread_join(cmd_thread, NULL);
+                }
+
+                // Mutex already unlocked, return early
+                return currentSession->global_errno;
             }
         } else {
             fprintf(params->stderr, "%s: command not found\n", argv[0]);
@@ -4127,6 +4174,7 @@ int ios_system(const char* inputCmd) {
     fflush(thread_stdin);
     fflush(thread_stdout);
     fflush(thread_stderr);
+    pthread_mutex_unlock(&ios_system_mutex);
     return currentSession->global_errno;
 }
 
