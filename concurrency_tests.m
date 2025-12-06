@@ -19,6 +19,8 @@
 #include "ios_pipeline.h"
 #include "ios_pid_allocator.h"
 #include "ios_async.h"
+#include "ios_shell_parser.h"
+#include "ios_system.h"
 
 // Test configuration
 #define TEST_THREAD_COUNT 20
@@ -503,6 +505,142 @@
     XCTAssertGreaterThan(operations, 1000, @"Should handle many allocations");
 
     pthread_mutex_destroy(&count_mutex);
+}
+
+#pragma mark - Shell Parser Tests
+
+- (void)testSemicolonExecution {
+    NSLog(@"[TEST] Shell Parser: Semicolon execution");
+
+    // Initialize ios_system if needed
+    initializeEnvironment();
+
+    // Test basic semicolon execution
+    int result = ios_system("echo a; echo b; echo c");
+    XCTAssertEqual(result, 0, @"Semicolon execution should succeed");
+}
+
+- (void)testAndOperator {
+    NSLog(@"[TEST] Shell Parser: AND operator (&&)");
+
+    initializeEnvironment();
+
+    // Test && with success
+    int result = ios_system("true && echo success");
+    XCTAssertEqual(result, 0, @"true && echo should succeed");
+
+    // Test && with failure - should short-circuit
+    result = ios_system("false && echo should_not_print");
+    XCTAssertNotEqual(result, 0, @"false && should fail and short-circuit");
+}
+
+- (void)testOrOperator {
+    NSLog(@"[TEST] Shell Parser: OR operator (||)");
+
+    initializeEnvironment();
+
+    // Test || with failure then success
+    int result = ios_system("false || echo fallback");
+    XCTAssertEqual(result, 0, @"false || echo should succeed (fallback executed)");
+
+    // Test || with success - should short-circuit
+    result = ios_system("true || echo should_not_print");
+    XCTAssertEqual(result, 0, @"true || should succeed and short-circuit");
+}
+
+- (void)testMixedOperators {
+    NSLog(@"[TEST] Shell Parser: Mixed operators");
+
+    initializeEnvironment();
+
+    // Test mixed ; && ||
+    int result = ios_system("true && echo a; false || echo b");
+    XCTAssertEqual(result, 0, @"Mixed operators should work");
+}
+
+- (void)testQuotedOperators {
+    NSLog(@"[TEST] Shell Parser: Quoted operators should not be parsed");
+
+    initializeEnvironment();
+
+    // Operators inside quotes should be treated as literal text
+    int result = ios_system("echo 'a && b; c || d'");
+    XCTAssertEqual(result, 0, @"Quoted operators should be treated as text");
+
+    result = ios_system("echo \"semicolon ; here\"");
+    XCTAssertEqual(result, 0, @"Double-quoted semicolon should be literal");
+}
+
+- (void)testCommandSubstitution {
+    NSLog(@"[TEST] Shell Parser: Command substitution $()");
+
+    initializeEnvironment();
+
+    // Test basic command substitution
+    int result = ios_system("echo $(echo hello)");
+    XCTAssertEqual(result, 0, @"Command substitution should succeed");
+}
+
+- (void)testBacktickSubstitution {
+    NSLog(@"[TEST] Shell Parser: Backtick substitution");
+
+    initializeEnvironment();
+
+    // Test backtick substitution
+    int result = ios_system("echo `echo hello`");
+    XCTAssertEqual(result, 0, @"Backtick substitution should succeed");
+}
+
+- (void)testNestedCommandSubstitution {
+    NSLog(@"[TEST] Shell Parser: Nested command substitution");
+
+    initializeEnvironment();
+
+    // Test nested $(...)
+    int result = ios_system("echo $(echo $(echo nested))");
+    XCTAssertEqual(result, 0, @"Nested command substitution should succeed");
+}
+
+- (void)testOperatorPrecedence {
+    NSLog(@"[TEST] Shell Parser: Operator precedence");
+
+    initializeEnvironment();
+
+    // Semicolons have lowest precedence, then && and ||, then pipes
+    // This should execute: (true && echo a) ; (false || echo b)
+    int result = ios_system("true && echo a ; false || echo b");
+    XCTAssertEqual(result, 0, @"Operator precedence should be correct");
+}
+
+- (void)testEmptySegments {
+    NSLog(@"[TEST] Shell Parser: Empty segments");
+
+    initializeEnvironment();
+
+    // Empty segments should be skipped
+    int result = ios_system("; ; echo hello ; ;");
+    XCTAssertEqual(result, 0, @"Empty segments should be skipped");
+}
+
+- (void)testShellOperatorDetection {
+    NSLog(@"[TEST] Shell Parser: Operator detection");
+
+    bool has_semi, has_and, has_or;
+
+    // Test basic detection
+    ios_check_shell_operators("echo hello", &has_semi, &has_and, &has_or);
+    XCTAssertFalse(has_semi, @"No semicolon in simple command");
+    XCTAssertFalse(has_and, @"No && in simple command");
+    XCTAssertFalse(has_or, @"No || in simple command");
+
+    ios_check_shell_operators("a; b && c || d", &has_semi, &has_and, &has_or);
+    XCTAssertTrue(has_semi, @"Should detect semicolon");
+    XCTAssertTrue(has_and, @"Should detect &&");
+    XCTAssertTrue(has_or, @"Should detect ||");
+
+    // Quoted operators should not be detected
+    ios_check_shell_operators("echo 'a && b'", &has_semi, &has_and, &has_or);
+    XCTAssertFalse(has_and, @"Should not detect quoted &&");
 }
 
 @end

@@ -13,6 +13,7 @@
 #include "ios_interpreter_pool.h"
 #include "ios_buffered_pipe.h"
 #include "ios_pipeline.h"
+#include "ios_shell_parser.h"
 
 // ios_system(cmd): Executes the command in "cmd". The goal is to be a drop-in replacement for system(), as much as possible.
 // We assume cmd is the command. If vim has prepared '/bin/sh -c "(command -arguments) < inputfile > outputfile",
@@ -3020,6 +3021,62 @@ int ios_system(const char* inputCmd) {
             command = originalCommand;
         }
     }
+
+    // PHASE 2.5: Command substitution expansion ($(...) and `...`)
+    // Unlock mutex before calling - substitution may recursively call ios_system()
+    pthread_mutex_unlock(&ios_system_mutex);
+    char* expandedCmd = ios_expand_substitutions(command);
+    pthread_mutex_lock(&ios_system_mutex);
+    if (expandedCmd != NULL && expandedCmd != command) {
+        // Substitution occurred, use expanded version
+        if (command != originalCommand && command != cmd) {
+            free((char*)command);
+        }
+        command = expandedCmd;
+        // Update originalCommand to track the new allocation
+        if (originalCommand != cmd) {
+            free(originalCommand);
+        }
+        originalCommand = (char*)command;
+        cmd = originalCommand;
+    }
+
+    // PHASE 2.6: Semicolon handling (sequential execution)
+    // Check for ; operator outside of quotes
+    char* semicolonPos = strstrquoted((char*)command, ";");
+    if (semicolonPos != NULL) {
+        NSLog(@"[ios_system] Detected semicolon, using sequential execution: %s", command);
+        // Unlock mutex - sequential execution will recursively call ios_system()
+        pthread_mutex_unlock(&ios_system_mutex);
+        int returnValue = ios_execute_sequential(command);
+        free(originalCommand);
+        return returnValue;
+    }
+
+    // PHASE 2.7: Conditional operators (&& and ||)
+    // Check for && or || operators outside of quotes
+    char* andPos = strstrquoted((char*)command, "&&");
+    char* orPos = strstrquoted((char*)command, "||");
+    if (andPos != NULL || orPos != NULL) {
+        // Make sure it's not part of a pipe operator (|& or &|)
+        bool is_conditional = true;
+        if (orPos != NULL) {
+            // Check if this is actually a pipe with shared stderr
+            char* pipeCheck = strstrquoted((char*)command, "|");
+            if (pipeCheck != NULL && (pipeCheck == orPos || pipeCheck + 1 == orPos)) {
+                is_conditional = false;  // This is |& or part of pipeline
+            }
+        }
+        if (is_conditional) {
+            NSLog(@"[ios_system] Detected conditional operators, using conditional execution: %s", command);
+            // Unlock mutex - conditional execution will recursively call ios_system()
+            pthread_mutex_unlock(&ios_system_mutex);
+            int returnValue = ios_execute_conditional(command);
+            free(originalCommand);
+            return returnValue;
+        }
+    }
+
     // alias expansion *before* input, output and error redirection.
     if ((command[0] != '\\') && (aliasDictionary != nil)) {
         // \command = cancel aliasing, get the original command

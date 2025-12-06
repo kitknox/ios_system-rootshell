@@ -896,6 +896,7 @@
 		A1655A4CB45C9C8A29CF6D0B /* ios_interpreter_pool.c in Sources */ = {isa = PBXBuildFile; fileRef = BE64637BF8DD05FCA627B6A8 /* ios_interpreter_pool.c */; };
 		AE9AEED215E292E3B6276B6C /* ios_buffered_pipe.c in Sources */ = {isa = PBXBuildFile; fileRef = 64FC477A3FC8D8AE65B55D3F /* ios_buffered_pipe.c */; };
 		C56F9E1A72F26E9BA1B53158 /* ios_pipeline.m in Sources */ = {isa = PBXBuildFile; fileRef = DC5C39152FD3989717D10E2E /* ios_pipeline.m */; };
+		A44AD7419F3640C3B214F0DC /* ios_shell_parser.m in Sources */ = {isa = PBXBuildFile; fileRef = 3BD4EAA5950D411792157F4D /* ios_shell_parser.m */; };
 		D212F98C25B066E9007F5D2D /* libssh2.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = D212F98A25B066E9007F5D2D /* libssh2.xcframework */; };
 		D212F99725B06810007F5D2D /* openssl.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = D212F99525B06810007F5D2D /* openssl.xcframework */; };
 		D285143225B1D7CD003405B4 /* sshkey.h in Headers */ = {isa = PBXBuildFile; fileRef = D285143125B1D7CD003405B4 /* sshkey.h */; };
@@ -1580,6 +1581,8 @@
 		D285149B25B200B9003405B4 /* openssl-compat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "openssl-compat.h"; path = "ssh_keygen/openbsd-compat/openssl-compat.h"; sourceTree = "<group>"; };
 		D28514A525B20351003405B4 /* config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = config.h; path = ssh_keygen/config.h; sourceTree = "<group>"; };
 		DC5C39152FD3989717D10E2E /* ios_pipeline.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = ios_pipeline.m; sourceTree = "<group>"; };
+		3BD4EAA5950D411792157F4D /* ios_shell_parser.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = ios_shell_parser.m; sourceTree = "<group>"; };
+		590D9297FBA741D09D39E3AA /* ios_shell_parser.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = ios_shell_parser.h; sourceTree = "<group>"; };
 		F4CCBCAF5225A15765AD4165 /* ios_pid_allocator.c */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.c; path = ios_pid_allocator.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -1910,6 +1913,8 @@
 				7953FF85AD87F55CB1E676E1 /* ios_session_manager.m */,
 				DC5C39152FD3989717D10E2E /* ios_pipeline.m */,
 				602C119EDFA187FCE1B9CC28 /* ios_pipeline.h */,
+				3BD4EAA5950D411792157F4D /* ios_shell_parser.m */,
+				590D9297FBA741D09D39E3AA /* ios_shell_parser.h */,
 				29F300FE4EC5898C70CEC71F /* ios_pid_allocator.h */,
 				F4CCBCAF5225A15765AD4165 /* ios_pid_allocator.c */,
 				4385685B6FF5BE250B8894AC /* ios_async.h */,
@@ -3730,6 +3735,7 @@
 				AE9AEED215E292E3B6276B6C /* ios_buffered_pipe.c in Sources */,
 				1D707A058C450FBE2A9638BE /* ios_session_manager.m in Sources */,
 				C56F9E1A72F26E9BA1B53158 /* ios_pipeline.m in Sources */,
+				A44AD7419F3640C3B214F0DC /* ios_shell_parser.m in Sources */,
 				2453CC7309263DC6DFB500AB /* ios_pid_allocator.c in Sources */,
 				67DE21D6B73138B03F9DCFD8 /* ios_async.m in Sources */,
 			);
