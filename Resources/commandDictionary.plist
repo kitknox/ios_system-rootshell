@@ -191,6 +191,27 @@
 		<string>+ckmnopqrstvwxyz</string>
 		<string>file</string>
 	</array>
+	<key>vim</key>
+	<array>
+		<string>vim.framework/vim</string>
+		<string>vim_main</string>
+		<string>bCc:dDeEfgHhi:lLmMnNoOpPqrRsSTu:UvVwW:xXyZ</string>
+		<string>file</string>
+	</array>
+	<key>vi</key>
+	<array>
+		<string>vim.framework/vim</string>
+		<string>vim_main</string>
+		<string>bCc:dDeEfgHhi:lLmMnNoOpPqrRsSTu:UvVwW:xXyZ</string>
+		<string>file</string>
+	</array>
+	<key>view</key>
+	<array>
+		<string>vim.framework/vim</string>
+		<string>vim_main</string>
+		<string>bCc:dDeEfgHhi:lLmMnNoOpPqrRsSTu:UvVwW:xXyZ</string>
+		<string>file</string>
+	</array>
 	<key>host</key>
 	<array>
 		<string>network_ios.framework/network_ios</string>

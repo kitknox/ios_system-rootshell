@@ -3,12 +3,28 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 70;
+	objectVersion = 54;
 	objects = {
 
 /* Begin PBXBuildFile section */
+		00D07C71BDE1A7BDBDFB070C /* move.c in Sources */ = {isa = PBXBuildFile; fileRef = 647AA0467AFB22B650E161FC /* move.c */; };
+		0185DF388C5136ECA5B0D8AC /* filepath.c in Sources */ = {isa = PBXBuildFile; fileRef = 6683F70EF94314B3F492B1A4 /* filepath.c */; };
+		04D70875C1FC651378282CD2 /* VimRuntime.bundle in Resources */ = {isa = PBXBuildFile; fileRef = D998F6F097B00D63118878A7 /* VimRuntime.bundle */; };
+		0539B5E65C0249FB7026FF39 /* misc2.c in Sources */ = {isa = PBXBuildFile; fileRef = 8B73B8DBC8140349B9877964 /* misc2.c */; };
+		058BB2B0586C4F507F4F2725 /* userfunc.c in Sources */ = {isa = PBXBuildFile; fileRef = 46D51733B9E3F973FE253ACB /* userfunc.c */; };
+		0621AA6683D152C39FD3721C /* eval.c in Sources */ = {isa = PBXBuildFile; fileRef = CE73FE6F9A556DC5D77F5940 /* eval.c */; };
+		0AE6EADE78986111ED0C3933 /* gc.c in Sources */ = {isa = PBXBuildFile; fileRef = 58D7B793071529C31F3C7661 /* gc.c */; };
+		0B7AA858E0FC989FB459331E /* clipboard.c in Sources */ = {isa = PBXBuildFile; fileRef = 16FE603D79C3DA36B49D9B83 /* clipboard.c */; };
+		0C9004BFCA863498F480AE6E /* vim9execute.c in Sources */ = {isa = PBXBuildFile; fileRef = E0E026771497675666E2AF39 /* vim9execute.c */; };
+		0CD00B117B6D9AF0B74B1F2F /* evalvars.c in Sources */ = {isa = PBXBuildFile; fileRef = 26D5CF8EF53B259D3961E7B4 /* evalvars.c */; };
+		0D753DF7AD5F10C6CE4A732F /* misc1.c in Sources */ = {isa = PBXBuildFile; fileRef = 6CD65F508488135B316760C3 /* misc1.c */; };
+		11FE24B543835CA572620004 /* change.c in Sources */ = {isa = PBXBuildFile; fileRef = EDC1074CA26A9A4BDCA9AECA /* change.c */; };
+		12D373D18748950D6B293BC4 /* session.c in Sources */ = {isa = PBXBuildFile; fileRef = 37A1F5DEE413BE3A7832DBF8 /* session.c */; };
+		14C07F117A6D17CC44C4437D /* vim.h in Headers */ = {isa = PBXBuildFile; fileRef = F1FCB3F08C25E042C355C414 /* vim.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		198FDF56CC0DB553FEDEB61F /* message.c in Sources */ = {isa = PBXBuildFile; fileRef = D295D7A08F80521BE6D60F1B /* message.c */; };
+		1B121744DD3537C81E0E2436 /* fuzzy.c in Sources */ = {isa = PBXBuildFile; fileRef = E7178774EBFDC2C5AC2749E1 /* fuzzy.c */; };
 		1D707A058C450FBE2A9638BE /* ios_session_manager.m in Sources */ = {isa = PBXBuildFile; fileRef = 7953FF85AD87F55CB1E676E1 /* ios_session_manager.m */; };
-		47076CAA2EE0FFFF0012B882 /* libncurses.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 227F87D6202EFA68001751C6 /* libncurses.tbd */; };
+		20CFC8CA9E69F9BA30A448E3 /* window.c in Sources */ = {isa = PBXBuildFile; fileRef = 5ED873333DF1CC1E95187393 /* window.c */; };
 		2209215C24B3B05A00D3327B /* open.m in Sources */ = {isa = PBXBuildFile; fileRef = 221CD98D21E8B03D00F3B47C /* open.m */; };
 		22122E2C21BC130700D8FE74 /* say.m in Sources */ = {isa = PBXBuildFile; fileRef = 22122E2A21BC129000D8FE74 /* say.m */; };
 		2216426D2B7B9B5F00043766 /* ssh-add.c in Sources */ = {isa = PBXBuildFile; fileRef = 2216426C2B7B9B5F00043766 /* ssh-add.c */; };
@@ -887,16 +903,97 @@
 		22F6A25C20683F8500E618F9 /* tool_writeout.c in Sources */ = {isa = PBXBuildFile; fileRef = 225781161FDB4D380050F312 /* tool_writeout.c */; settings = {COMPILER_FLAGS = "-DHAVE_CONFIG_H -I curl/curl/include/ -I curl/curl/lib/ -I ./Frameworks/libssh2.framework/Headers"; }; };
 		22F6A25D20683F8600E618F9 /* tool_xattr.c in Sources */ = {isa = PBXBuildFile; fileRef = 225781181FDB4D380050F312 /* tool_xattr.c */; settings = {COMPILER_FLAGS = "-DHAVE_CONFIG_H -I curl/curl/include/ -I curl/curl/lib/ -DBUILDING_LIBCURL -I ./Frameworks/libssh2.framework/Headers"; }; };
 		22F6A25E20683F9B00E618F9 /* ios_system.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 223496AB1FD5FC71007ED1A9 /* ios_system.framework */; };
+		239BA8A80B06DC7055A1B473 /* memline.c in Sources */ = {isa = PBXBuildFile; fileRef = 6EC3435D3E0F8A29207BD410 /* memline.c */; };
+		23E21725A6015DCE07E015FF /* blowfish.c in Sources */ = {isa = PBXBuildFile; fileRef = 390C4525A2DD5B26DB6EB703 /* blowfish.c */; };
 		2453CC7309263DC6DFB500AB /* ios_pid_allocator.c in Sources */ = {isa = PBXBuildFile; fileRef = F4CCBCAF5225A15765AD4165 /* ios_pid_allocator.c */; };
+		2653258272FBE70B2342C0CA /* quickfix.c in Sources */ = {isa = PBXBuildFile; fileRef = 804DD4935BC4BEA0FD8AD5FA /* quickfix.c */; };
+		284CE9B8487207C5F9CAE0CE /* logfile.c in Sources */ = {isa = PBXBuildFile; fileRef = 02E3469CE5BB85A89B85D950 /* logfile.c */; };
+		2BD240845BDAB5BCA8DD6C3F /* beval.c in Sources */ = {isa = PBXBuildFile; fileRef = 894C7B7116624900D5EB100D /* beval.c */; };
+		2C1423C837D50D84E45CEA54 /* ex_eval.c in Sources */ = {isa = PBXBuildFile; fileRef = 07A40CBC6C40EE3639CF11CA /* ex_eval.c */; };
+		2DF6B1F3017AF60504F31B95 /* textobject.c in Sources */ = {isa = PBXBuildFile; fileRef = F762477D8066BBC2477770B4 /* textobject.c */; };
 		2F6B309D7B22E5A840C44C26 /* ios_pid_allocator.h in Headers */ = {isa = PBXBuildFile; fileRef = 29F300FE4EC5898C70CEC71F /* ios_pid_allocator.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		3017CEDCC1C1FA4E53F1FB7F /* digraph.c in Sources */ = {isa = PBXBuildFile; fileRef = 109268A9919FA2E2B6AACFE9 /* digraph.c */; };
 		3159688061976C6C96073C43 /* ios_thread_pool.c in Sources */ = {isa = PBXBuildFile; fileRef = 0622FCBE50F6F6A2BEDA3E9B /* ios_thread_pool.c */; };
-		47076C882EE0D7BE0012B882 /* ios_system.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 223496AB1FD5FC71007ED1A9 /* ios_system.framework */; };
-		47076C8A2EE0D7BE0012B882 /* awk.h in Headers */ = {isa = PBXBuildFile; fileRef = 22F6A15120683BBD00E618F9 /* awk.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		317B870EF15064774E618161 /* menu.c in Sources */ = {isa = PBXBuildFile; fileRef = 85EA10723C810AAC36268165 /* menu.c */; };
+		35ECA8CE158BAADC68F4EAC4 /* vim9class.c in Sources */ = {isa = PBXBuildFile; fileRef = 5493545BEBEE671E8786D458 /* vim9class.c */; };
+		36AD64079CAD79EAB2CAB9A0 /* sha256.c in Sources */ = {isa = PBXBuildFile; fileRef = A1FA7ADD66CF5FE7C3D8EEE3 /* sha256.c */; };
+		374FE22FC508EE47F3FD4176 /* vim9type.c in Sources */ = {isa = PBXBuildFile; fileRef = 6ADC02719D71AED4466E0A0E /* vim9type.c */; };
+		39F25BB999D6FA009765C9F1 /* usercmd.c in Sources */ = {isa = PBXBuildFile; fileRef = 3C22459AC5194C388D85A0A0 /* usercmd.c */; };
+		3A62F3FCAF3965171EC7C4B7 /* fold.c in Sources */ = {isa = PBXBuildFile; fileRef = BFD303CED4D1FC7BFF890F2D /* fold.c */; };
+		3C6D9744BD799ED17910B645 /* ios_system.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 223496AB1FD5FC71007ED1A9 /* ios_system.framework */; };
+		3EF20532D3D78509A1A2220A /* ex_getln.c in Sources */ = {isa = PBXBuildFile; fileRef = 875FB191B71E4780F891D880 /* ex_getln.c */; };
+		43CC741FCD42AFDC1C95E058 /* insexpand.c in Sources */ = {isa = PBXBuildFile; fileRef = A9B38EDE6262E937223F4C93 /* insexpand.c */; };
+		44D3472C50E6930992913ED1 /* xpatience.c in Sources */ = {isa = PBXBuildFile; fileRef = 1439F796BC5683C052EC8604 /* xpatience.c */; };
+		4A7CBC767436F13C782745B7 /* term.c in Sources */ = {isa = PBXBuildFile; fileRef = 30C296E43D38834DCF823552 /* term.c */; };
+		4E5A0A05CB4D947B065A73DB /* ios_shell_parser.m in Sources */ = {isa = PBXBuildFile; fileRef = BAF2CBC59A307113278823FC /* ios_shell_parser.m */; };
+		4F3978A9312358CB8EA6BE6E /* regexp.c in Sources */ = {isa = PBXBuildFile; fileRef = 5AA46EF28EBC71EF959356E9 /* regexp.c */; };
+		4F6BCCBAEB10AA3CDE8FA490 /* vim9script.c in Sources */ = {isa = PBXBuildFile; fileRef = 0632B68047815850D1EF6489 /* vim9script.c */; };
+		5233E9CFA3DBFF629A8DB5FF /* libncurses.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 4615932ADA6745B80454C4CB /* libncurses.tbd */; };
+		5375766A03DA467ACC5E3A97 /* textformat.c in Sources */ = {isa = PBXBuildFile; fileRef = 9799A0EE13A44EA0ED5D04CB /* textformat.c */; };
+		56321E1A6384918F2FFA6AE1 /* list.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C3A62640A7D98DBA3558BD1 /* list.c */; };
+		5A18AE6150FE2FB3F0DAEDED /* cmdhist.c in Sources */ = {isa = PBXBuildFile; fileRef = C0106DCAABE5289E52DA556F /* cmdhist.c */; };
+		5D012381519790E2720DD803 /* spellsuggest.c in Sources */ = {isa = PBXBuildFile; fileRef = B267D05CEC1A7365A0AF4B18 /* spellsuggest.c */; };
+		5EF9223347AFB1ABB64F579C /* vim9cmds.c in Sources */ = {isa = PBXBuildFile; fileRef = 50ACA9B8AB9A9124165CAF20 /* vim9cmds.c */; };
+		601E9EDD29261313AE277C7C /* optionstr.c in Sources */ = {isa = PBXBuildFile; fileRef = F94F209B8F4EB83CF3D4A3CD /* optionstr.c */; };
+		6046CDD2B4192D9C30BBFCA9 /* textprop.c in Sources */ = {isa = PBXBuildFile; fileRef = F1C35A720062F92005DE00B5 /* textprop.c */; };
+		60A92FAC2C4C4EB6FC2C3D29 /* spell.c in Sources */ = {isa = PBXBuildFile; fileRef = FFC64C535B060F17BA492866 /* spell.c */; };
+		613AECB809710AB807AF431A /* mark.c in Sources */ = {isa = PBXBuildFile; fileRef = DE67E6581DA2A16C6F4E8E8D /* mark.c */; };
+		6285757DC2688E1ADFB86A2C /* crypt.c in Sources */ = {isa = PBXBuildFile; fileRef = 8C74A15459E1DD31297A6C69 /* crypt.c */; };
+		6791A69194832DA5F1EA0AC3 /* highlight.c in Sources */ = {isa = PBXBuildFile; fileRef = 77FC73A7A8F516344770B595 /* highlight.c */; };
 		67DE21D6B73138B03F9DCFD8 /* ios_async.m in Sources */ = {isa = PBXBuildFile; fileRef = 1DC97367A0FF6E503474FD03 /* ios_async.m */; };
+		6A13AAF22CAD2B20D2237936 /* scriptfile.c in Sources */ = {isa = PBXBuildFile; fileRef = C873DD142966C86C04C74EF5 /* scriptfile.c */; };
+		6B30EBEDFE5F61182CDBFA3B /* vim9generics.c in Sources */ = {isa = PBXBuildFile; fileRef = 14C88F5ACB7DCFB0D9EC83CB /* vim9generics.c */; };
+		73CB1D27E3E8DB8F28DF2F31 /* testing.c in Sources */ = {isa = PBXBuildFile; fileRef = 7748E851C4955DA4F57379FF /* testing.c */; };
+		7480E324E3CCCA7A374830E0 /* map.c in Sources */ = {isa = PBXBuildFile; fileRef = B5D05071145F60D053A032DC /* map.c */; };
+		770DF2CDDFBB601624C9E754 /* dict.c in Sources */ = {isa = PBXBuildFile; fileRef = 25612E0FF751C3A84DB5BFA3 /* dict.c */; };
+		77D09D2BAF2C0CBC75319FDD /* charset.c in Sources */ = {isa = PBXBuildFile; fileRef = 2D6D5C50B1A685475E2F2F94 /* charset.c */; };
+		786AE42149C194887B19A599 /* viminfo.c in Sources */ = {isa = PBXBuildFile; fileRef = 2FBFA979C2D3F4100DE80B48 /* viminfo.c */; };
+		791FD150775934A615845872 /* tabpanel.c in Sources */ = {isa = PBXBuildFile; fileRef = 7F869F92B9EF0FF6F20CEC66 /* tabpanel.c */; };
+		7A78C94B3760A69D26A8C677 /* spellfile.c in Sources */ = {isa = PBXBuildFile; fileRef = 82AC59F4A04EBF5620F9972A /* spellfile.c */; };
+		7B5D67154B6BB952016C3F64 /* normal.c in Sources */ = {isa = PBXBuildFile; fileRef = 51D2A371031544C79382A3D9 /* normal.c */; };
+		7C66FAB2C9B0D51459705B03 /* vim9expr.c in Sources */ = {isa = PBXBuildFile; fileRef = 10A756CE6D58FD7CDDB0635A /* vim9expr.c */; };
+		7E380900CE5D4EFCB55ADBAF /* vim9compile.c in Sources */ = {isa = PBXBuildFile; fileRef = C1C76AA0FAD4FE8552706405 /* vim9compile.c */; };
+		7FC429CF8A722F50F106A6B3 /* cmdexpand.c in Sources */ = {isa = PBXBuildFile; fileRef = 15045F3FBABBFE6CB40604BD /* cmdexpand.c */; };
+		8045FF4134C871495B67BF4F /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 57EBC231CF5EB03FA86AC021 /* Foundation.framework */; };
+		81A783945518E9A3914AE2E5 /* time.c in Sources */ = {isa = PBXBuildFile; fileRef = F924AB1CA1AAE364E409B71F /* time.c */; };
+		826F4CDF7BAADEB0935346A4 /* screen.c in Sources */ = {isa = PBXBuildFile; fileRef = 2ED4A85D958437910A0E7DBE /* screen.c */; };
+		86370AA6D56BCB073E29BB22 /* typval.c in Sources */ = {isa = PBXBuildFile; fileRef = EC4B6185402673E3324069C1 /* typval.c */; };
+		86D982EC5453143E15658C77 /* arabic.c in Sources */ = {isa = PBXBuildFile; fileRef = 303CD505A1C17DAAFBFCED58 /* arabic.c */; };
+		88E0A06061D8DCD103CF8533 /* tuple.c in Sources */ = {isa = PBXBuildFile; fileRef = 0CA45B5007AE5B53601E0BA7 /* tuple.c */; };
+		8DC736CA0835B1ABA048F8B9 /* mbyte.c in Sources */ = {isa = PBXBuildFile; fileRef = 5D743000A5FBE99D064D68C7 /* mbyte.c */; };
+		8E89D9A49D7F34BA1569F779 /* xemit.c in Sources */ = {isa = PBXBuildFile; fileRef = 8098C9B702A70D5BD226204C /* xemit.c */; };
+		933D3DC7C36B445A13A7BBB7 /* search.c in Sources */ = {isa = PBXBuildFile; fileRef = 5EFA2B473DE9D2A33477AFEC /* search.c */; };
+		936F515811732D8C7F8DB8E7 /* autocmd.c in Sources */ = {isa = PBXBuildFile; fileRef = 8846C9C5C0357FA788B52362 /* autocmd.c */; };
+		95C976A4E563677804F6068F /* xutils.c in Sources */ = {isa = PBXBuildFile; fileRef = E0734E86938F26EE59844B25 /* xutils.c */; };
+		9EA9D191A9A71825CBBC1832 /* evalbuffer.c in Sources */ = {isa = PBXBuildFile; fileRef = B1A5BCE6728B0DA08FBA064A /* evalbuffer.c */; };
+		9EAB0A2F9F8A65D66C6102A7 /* version.c in Sources */ = {isa = PBXBuildFile; fileRef = 61165929CC328FF4BA896FE4 /* version.c */; };
 		A1655A4CB45C9C8A29CF6D0B /* ios_interpreter_pool.c in Sources */ = {isa = PBXBuildFile; fileRef = BE64637BF8DD05FCA627B6A8 /* ios_interpreter_pool.c */; };
+		A3085F4BAE00B604D5AE5C61 /* hashtab.c in Sources */ = {isa = PBXBuildFile; fileRef = 6593ED97D940B900DF0C94D6 /* hashtab.c */; };
+		A6655306EBD2AE2D66438086 /* register.c in Sources */ = {isa = PBXBuildFile; fileRef = EB2695A2993A83D0A2C5FDCE /* register.c */; };
+		A93AA1B25E3ACDF20B303D50 /* arglist.c in Sources */ = {isa = PBXBuildFile; fileRef = 196D8EBB5A4AAF3D6BA9FF0E /* arglist.c */; };
+		A99D0586BFDD0EFA9F4548A1 /* os_unix.c in Sources */ = {isa = PBXBuildFile; fileRef = 781936636F833B35BC218FA7 /* os_unix.c */; };
+		AAC532324833B270C67B62DB /* help.c in Sources */ = {isa = PBXBuildFile; fileRef = 2075311ECD89CA4AD92116B2 /* help.c */; };
+		AAE90AC015639A8DF58FB0E5 /* getchar.c in Sources */ = {isa = PBXBuildFile; fileRef = 4878744568C484AF7BF6ADDE /* getchar.c */; };
+		AD31CD7C70916B9B448A8680 /* profiler.c in Sources */ = {isa = PBXBuildFile; fileRef = 6A6A4ACF5F03212B7E5B7F73 /* profiler.c */; };
 		AE9AEED215E292E3B6276B6C /* ios_buffered_pipe.c in Sources */ = {isa = PBXBuildFile; fileRef = 64FC477A3FC8D8AE65B55D3F /* ios_buffered_pipe.c */; };
+		B2F099B95059BDE942B47BDB /* linematch.c in Sources */ = {isa = PBXBuildFile; fileRef = 2CF54BFEC491A0EFFFC8CE57 /* linematch.c */; };
+		B34D581DE9F46A39F9A72641 /* debugger.c in Sources */ = {isa = PBXBuildFile; fileRef = F977B018F55354A0EC925138 /* debugger.c */; };
+		B3DA8A1B61055A76C8546AFF /* clientserver.c in Sources */ = {isa = PBXBuildFile; fileRef = AB84C398B7CB0693F64813DD /* clientserver.c */; };
+		B46E3561FF1D88EB9F9054BC /* ex_docmd.c in Sources */ = {isa = PBXBuildFile; fileRef = F6D54B55C861A2C1AC040ED9 /* ex_docmd.c */; };
+		B7302993E3375FAF8F78871A /* drawline.c in Sources */ = {isa = PBXBuildFile; fileRef = 0A7E2B6CAAFA61CAF84B3900 /* drawline.c */; };
+		B737D740987D3BA128FCE160 /* popupwin.c in Sources */ = {isa = PBXBuildFile; fileRef = FDA8063F240E56C6CD5BE027 /* popupwin.c */; };
+		B94B4483482D412D6D94BA76 /* fileio.c in Sources */ = {isa = PBXBuildFile; fileRef = 670E850F38D3164EB1B16340 /* fileio.c */; };
+		BBA3671A6222EE75EB850904 /* edit.c in Sources */ = {isa = PBXBuildFile; fileRef = F4ED359B8C47BDD5572F9792 /* edit.c */; };
+		C122C5984D2E7FEABB9C59FE /* syntax.c in Sources */ = {isa = PBXBuildFile; fileRef = 642BBDB7C3A8C55389AA302D /* syntax.c */; };
+		C172E30745B0D7FDDF085D0C /* buffer.c in Sources */ = {isa = PBXBuildFile; fileRef = 0B3215A3546D29775C78C3EC /* buffer.c */; };
+		C296E259723AABEF0808B576 /* json.c in Sources */ = {isa = PBXBuildFile; fileRef = 2586D6A95A9AE0C8D42ABB75 /* json.c */; };
+		C2ABD31C053ED4AFA58E35FB /* diff.c in Sources */ = {isa = PBXBuildFile; fileRef = A1A4371C545D059905203805 /* diff.c */; };
 		C56F9E1A72F26E9BA1B53158 /* ios_pipeline.m in Sources */ = {isa = PBXBuildFile; fileRef = DC5C39152FD3989717D10E2E /* ios_pipeline.m */; };
-		A44AD7419F3640C3B214F0DC /* ios_shell_parser.m in Sources */ = {isa = PBXBuildFile; fileRef = 3BD4EAA5950D411792157F4D /* ios_shell_parser.m */; };
+		C8E2EAD00628440F655B5040 /* strings.c in Sources */ = {isa = PBXBuildFile; fileRef = 6138B897F8E337B7A9CBA7CD /* strings.c */; };
+		CA3D134D406963E8486D4265 /* float.c in Sources */ = {isa = PBXBuildFile; fileRef = F3E56A152ACD4EAEB5D364C1 /* float.c */; };
+		CB541B32D8781216F974002D /* sign.c in Sources */ = {isa = PBXBuildFile; fileRef = C16530512B54E2AAD6AD95AF /* sign.c */; };
+		CF2D0323650F9FEFCBEDD7B0 /* ui.c in Sources */ = {isa = PBXBuildFile; fileRef = 9F960DDB3DF55F32B11A6340 /* ui.c */; };
+		D2021D1815C551B5B45C551C /* tag.c in Sources */ = {isa = PBXBuildFile; fileRef = A04B09820164C9018FA35ECC /* tag.c */; };
 		D212F98C25B066E9007F5D2D /* libssh2.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = D212F98A25B066E9007F5D2D /* libssh2.xcframework */; };
 		D212F99725B06810007F5D2D /* openssl.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = D212F99525B06810007F5D2D /* openssl.xcframework */; };
 		D285143225B1D7CD003405B4 /* sshkey.h in Headers */ = {isa = PBXBuildFile; fileRef = D285143125B1D7CD003405B4 /* sshkey.h */; };
@@ -906,13 +1003,67 @@
 		D285147A25B1E4DC003405B4 /* openbsd-compat.h in Headers */ = {isa = PBXBuildFile; fileRef = D285147925B1E4DC003405B4 /* openbsd-compat.h */; };
 		D285149C25B200B9003405B4 /* openssl-compat.h in Headers */ = {isa = PBXBuildFile; fileRef = D285149B25B200B9003405B4 /* openssl-compat.h */; };
 		D28514A625B20351003405B4 /* config.h in Headers */ = {isa = PBXBuildFile; fileRef = D28514A525B20351003405B4 /* config.h */; };
+		D40839E5FF88DA4448B4AC50 /* findfile.c in Sources */ = {isa = PBXBuildFile; fileRef = A377BA12ED8A2E11C4C6F6F5 /* findfile.c */; };
+		D4CDD5573F110B289860F47F /* bufwrite.c in Sources */ = {isa = PBXBuildFile; fileRef = C792369AD1DE90CB7E20497B /* bufwrite.c */; };
+		D5C059490EA0B7FCF8D4C5FB /* xhistogram.c in Sources */ = {isa = PBXBuildFile; fileRef = BCB33AE0BAC1B46F40B2545C /* xhistogram.c */; };
+		D64387D29485F5D56AC8F939 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 5C56839F9A623F640254C9A1 /* main.c */; };
+		D672013E8965D78E0AD0584F /* evalwindow.c in Sources */ = {isa = PBXBuildFile; fileRef = 7DA71F30C28C0FC2535A1EEA /* evalwindow.c */; };
+		D837D41C2F4B4E5845743F41 /* crypt_zip.c in Sources */ = {isa = PBXBuildFile; fileRef = BB658FD8E681099946CAD35A /* crypt_zip.c */; };
+		D84455FEEA7D97F0EE36D8F7 /* memfile.c in Sources */ = {isa = PBXBuildFile; fileRef = 9DEEDCDA4C649557511A9C3F /* memfile.c */; };
+		D961B9A1119496D16679659A /* mouse.c in Sources */ = {isa = PBXBuildFile; fileRef = D8C05483ECBE5C507B8BC056 /* mouse.c */; };
+		D967E69F689DEBCF0F86AF9B /* undo.c in Sources */ = {isa = PBXBuildFile; fileRef = EFA3C8231F927ECF7B4F6189 /* undo.c */; };
+		D96F25FEDA05BCEB51C5BE6C /* cindent.c in Sources */ = {isa = PBXBuildFile; fileRef = 2E25B058F324CA2B8CB8BF38 /* cindent.c */; };
+		DAAD2EC5D994465A261DB8F5 /* option.c in Sources */ = {isa = PBXBuildFile; fileRef = 32093E70471D31F4551FCE34 /* option.c */; };
+		DCC0F384477DC6688B7170FA /* match.c in Sources */ = {isa = PBXBuildFile; fileRef = B519BC3E63A068E2E61416BE /* match.c */; };
+		DD8AD410598CF05BBB254D14 /* ex_cmds.c in Sources */ = {isa = PBXBuildFile; fileRef = B8A2CEE0985F0F3EA1D7945C /* ex_cmds.c */; };
+		E0807E1ADBE179B8056C6DD0 /* xdiffi.c in Sources */ = {isa = PBXBuildFile; fileRef = 156887B4CFDF00AED99BADE9 /* xdiffi.c */; };
+		E17ADFC909AF162410524293 /* popupmenu.c in Sources */ = {isa = PBXBuildFile; fileRef = 7AF52D98575B4A313FA31FD4 /* popupmenu.c */; };
 		EBC4BDAEBCEDF61FE1DE6775 /* ios_env_manager.c in Sources */ = {isa = PBXBuildFile; fileRef = 6C9B020F08382FB8FD758811 /* ios_env_manager.c */; };
+		EEDDB253A0EEDECA1904568A /* sound.c in Sources */ = {isa = PBXBuildFile; fileRef = 2CB1114EEDE032F7BA202BED /* sound.c */; };
+		EF1A246C9692EA31105E1CCF /* xprepare.c in Sources */ = {isa = PBXBuildFile; fileRef = 1248FD73325E8DE1B7E9B63A /* xprepare.c */; };
+		EF509233C44BF06F27EED9E6 /* ios_vim.m in Sources */ = {isa = PBXBuildFile; fileRef = AB3565B5CF967EDD008EAFBD /* ios_vim.m */; };
 		EFCD005FAD1AE20563334CEA /* ios_async.h in Headers */ = {isa = PBXBuildFile; fileRef = 4385685B6FF5BE250B8894AC /* ios_async.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		F1711489FED49234FF53F1A7 /* indent.c in Sources */ = {isa = PBXBuildFile; fileRef = ADFDA7BA69991F779470F4BE /* indent.c */; };
+		F19C03D9E2C2DA32E36E85BA /* ops.c in Sources */ = {isa = PBXBuildFile; fileRef = A99707022A7276D35F0DE252 /* ops.c */; };
+		F41C8D501C8D84187E0C3422 /* vim9instr.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FB9314A099234AD4A60D5F3 /* vim9instr.c */; };
+		F47B20CB2569D2E8BBE0F91A /* evalfunc.c in Sources */ = {isa = PBXBuildFile; fileRef = 793F700424F9E79218D5899D /* evalfunc.c */; };
+		F5C4F2BA4F208CE57C7C1576 /* blob.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AE25DCBF872D6D54EC9B8A5 /* blob.c */; };
+		F6F1C0B3839F6F83605F13AD /* alloc.c in Sources */ = {isa = PBXBuildFile; fileRef = 5AA72A2B998330C9120896AE /* alloc.c */; };
+		F7EB6B0668B85916665D52A1 /* ex_cmds2.c in Sources */ = {isa = PBXBuildFile; fileRef = 6C1998EA1C6AD4391A1F6C02 /* ex_cmds2.c */; };
+		F9FE0F67AB860B573A62365B /* locale.c in Sources */ = {isa = PBXBuildFile; fileRef = 66D291BDC1AF912405A7DD7F /* locale.c */; };
+		FDC167903316FADF56D5C138 /* drawscreen.c in Sources */ = {isa = PBXBuildFile; fileRef = 9661B77B497B448AB0AA57F3 /* drawscreen.c */; };
+		FEFE853C0C8E0D1FF872B861 /* hardcopy.c in Sources */ = {isa = PBXBuildFile; fileRef = 6735C9CA0FD31AE60999A4CA /* hardcopy.c */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		EBE87B8CC61766A13BD797CD /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 223496A21FD5FC71007ED1A9 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 223496AA1FD5FC71007ED1A9;
+			remoteInfo = ios_system;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
-		0622FCBE50F6F6A2BEDA3E9B /* ios_thread_pool.c */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.c; path = ios_thread_pool.c; sourceTree = "<group>"; };
-		1DC97367A0FF6E503474FD03 /* ios_async.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = ios_async.m; sourceTree = "<group>"; };
+		02E3469CE5BB85A89B85D950 /* logfile.c */ = {isa = PBXFileReference; includeInIndex = 1; name = logfile.c; path = vim/src/logfile.c; sourceTree = "<group>"; };
+		0622FCBE50F6F6A2BEDA3E9B /* ios_thread_pool.c */ = {isa = PBXFileReference; includeInIndex = 1; path = ios_thread_pool.c; sourceTree = "<group>"; };
+		0632B68047815850D1EF6489 /* vim9script.c */ = {isa = PBXFileReference; includeInIndex = 1; name = vim9script.c; path = vim/src/vim9script.c; sourceTree = "<group>"; };
+		07A40CBC6C40EE3639CF11CA /* ex_eval.c */ = {isa = PBXFileReference; includeInIndex = 1; name = ex_eval.c; path = vim/src/ex_eval.c; sourceTree = "<group>"; };
+		0A7E2B6CAAFA61CAF84B3900 /* drawline.c */ = {isa = PBXFileReference; includeInIndex = 1; name = drawline.c; path = vim/src/drawline.c; sourceTree = "<group>"; };
+		0B3215A3546D29775C78C3EC /* buffer.c */ = {isa = PBXFileReference; includeInIndex = 1; name = buffer.c; path = vim/src/buffer.c; sourceTree = "<group>"; };
+		0CA45B5007AE5B53601E0BA7 /* tuple.c */ = {isa = PBXFileReference; includeInIndex = 1; name = tuple.c; path = vim/src/tuple.c; sourceTree = "<group>"; };
+		109268A9919FA2E2B6AACFE9 /* digraph.c */ = {isa = PBXFileReference; includeInIndex = 1; name = digraph.c; path = vim/src/digraph.c; sourceTree = "<group>"; };
+		10A756CE6D58FD7CDDB0635A /* vim9expr.c */ = {isa = PBXFileReference; includeInIndex = 1; name = vim9expr.c; path = vim/src/vim9expr.c; sourceTree = "<group>"; };
+		1248FD73325E8DE1B7E9B63A /* xprepare.c */ = {isa = PBXFileReference; includeInIndex = 1; name = xprepare.c; path = vim/src/xdiff/xprepare.c; sourceTree = "<group>"; };
+		1439F796BC5683C052EC8604 /* xpatience.c */ = {isa = PBXFileReference; includeInIndex = 1; name = xpatience.c; path = vim/src/xdiff/xpatience.c; sourceTree = "<group>"; };
+		14C88F5ACB7DCFB0D9EC83CB /* vim9generics.c */ = {isa = PBXFileReference; includeInIndex = 1; name = vim9generics.c; path = vim/src/vim9generics.c; sourceTree = "<group>"; };
+		15045F3FBABBFE6CB40604BD /* cmdexpand.c */ = {isa = PBXFileReference; includeInIndex = 1; name = cmdexpand.c; path = vim/src/cmdexpand.c; sourceTree = "<group>"; };
+		156887B4CFDF00AED99BADE9 /* xdiffi.c */ = {isa = PBXFileReference; includeInIndex = 1; name = xdiffi.c; path = vim/src/xdiff/xdiffi.c; sourceTree = "<group>"; };
+		16FE603D79C3DA36B49D9B83 /* clipboard.c */ = {isa = PBXFileReference; includeInIndex = 1; name = clipboard.c; path = vim/src/clipboard.c; sourceTree = "<group>"; };
+		196D8EBB5A4AAF3D6BA9FF0E /* arglist.c */ = {isa = PBXFileReference; includeInIndex = 1; name = arglist.c; path = vim/src/arglist.c; sourceTree = "<group>"; };
+		1DC97367A0FF6E503474FD03 /* ios_async.m */ = {isa = PBXFileReference; includeInIndex = 1; path = ios_async.m; sourceTree = "<group>"; };
+		2075311ECD89CA4AD92116B2 /* help.c */ = {isa = PBXFileReference; includeInIndex = 1; name = help.c; path = vim/src/help.c; sourceTree = "<group>"; };
 		22122E2A21BC129000D8FE74 /* say.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = say.m; sourceTree = "<group>"; };
 		2216426C2B7B9B5F00043766 /* ssh-add.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = "ssh-add.c"; path = "ssh_keygen/ssh-add.c"; sourceTree = SOURCE_ROOT; };
 		2217ECD321CBA5F40049B382 /* entropy.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = entropy.c; path = ssh_keygen/entropy.c; sourceTree = "<group>"; };
@@ -1561,18 +1712,108 @@
 		22F6A16920683D5200E618F9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		22F6A1AF20683F4100E618F9 /* curl_ios.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = curl_ios.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		22F6A1B220683F4100E618F9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = ../curl_ios/Info.plist; sourceTree = "<group>"; };
+		25612E0FF751C3A84DB5BFA3 /* dict.c */ = {isa = PBXFileReference; includeInIndex = 1; name = dict.c; path = vim/src/dict.c; sourceTree = "<group>"; };
+		2586D6A95A9AE0C8D42ABB75 /* json.c */ = {isa = PBXFileReference; includeInIndex = 1; name = json.c; path = vim/src/json.c; sourceTree = "<group>"; };
+		26D5CF8EF53B259D3961E7B4 /* evalvars.c */ = {isa = PBXFileReference; includeInIndex = 1; name = evalvars.c; path = vim/src/evalvars.c; sourceTree = "<group>"; };
 		29F300FE4EC5898C70CEC71F /* ios_pid_allocator.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = ios_pid_allocator.h; sourceTree = "<group>"; };
+		2CB1114EEDE032F7BA202BED /* sound.c */ = {isa = PBXFileReference; includeInIndex = 1; name = sound.c; path = vim/src/sound.c; sourceTree = "<group>"; };
+		2CF54BFEC491A0EFFFC8CE57 /* linematch.c */ = {isa = PBXFileReference; includeInIndex = 1; name = linematch.c; path = vim/src/linematch.c; sourceTree = "<group>"; };
+		2D6D5C50B1A685475E2F2F94 /* charset.c */ = {isa = PBXFileReference; includeInIndex = 1; name = charset.c; path = vim/src/charset.c; sourceTree = "<group>"; };
+		2E25B058F324CA2B8CB8BF38 /* cindent.c */ = {isa = PBXFileReference; includeInIndex = 1; name = cindent.c; path = vim/src/cindent.c; sourceTree = "<group>"; };
+		2ED4A85D958437910A0E7DBE /* screen.c */ = {isa = PBXFileReference; includeInIndex = 1; name = screen.c; path = vim/src/screen.c; sourceTree = "<group>"; };
+		2FBFA979C2D3F4100DE80B48 /* viminfo.c */ = {isa = PBXFileReference; includeInIndex = 1; name = viminfo.c; path = vim/src/viminfo.c; sourceTree = "<group>"; };
+		303CD505A1C17DAAFBFCED58 /* arabic.c */ = {isa = PBXFileReference; includeInIndex = 1; name = arabic.c; path = vim/src/arabic.c; sourceTree = "<group>"; };
+		30C296E43D38834DCF823552 /* term.c */ = {isa = PBXFileReference; includeInIndex = 1; name = term.c; path = vim/src/term.c; sourceTree = "<group>"; };
+		32093E70471D31F4551FCE34 /* option.c */ = {isa = PBXFileReference; includeInIndex = 1; name = option.c; path = vim/src/option.c; sourceTree = "<group>"; };
+		37A1F5DEE413BE3A7832DBF8 /* session.c */ = {isa = PBXFileReference; includeInIndex = 1; name = session.c; path = vim/src/session.c; sourceTree = "<group>"; };
+		390C4525A2DD5B26DB6EB703 /* blowfish.c */ = {isa = PBXFileReference; includeInIndex = 1; name = blowfish.c; path = vim/src/blowfish.c; sourceTree = "<group>"; };
+		3C22459AC5194C388D85A0A0 /* usercmd.c */ = {isa = PBXFileReference; includeInIndex = 1; name = usercmd.c; path = vim/src/usercmd.c; sourceTree = "<group>"; };
 		4385685B6FF5BE250B8894AC /* ios_async.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = ios_async.h; sourceTree = "<group>"; };
-		47076C8F2EE0D7BE0012B882 /* joe.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = joe.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		47076C902EE0D7BE0012B882 /* awk copy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "awk copy-Info.plist"; path = "/Users/kit/Development/ios_system/awk copy-Info.plist"; sourceTree = "<absolute>"; };
+		4615932ADA6745B80454C4CB /* libncurses.tbd */ = {isa = PBXFileReference; includeInIndex = 1; path = libncurses.tbd; sourceTree = SDKROOT; };
+		46D51733B9E3F973FE253ACB /* userfunc.c */ = {isa = PBXFileReference; includeInIndex = 1; name = userfunc.c; path = vim/src/userfunc.c; sourceTree = "<group>"; };
+		4878744568C484AF7BF6ADDE /* getchar.c */ = {isa = PBXFileReference; includeInIndex = 1; name = getchar.c; path = vim/src/getchar.c; sourceTree = "<group>"; };
+		4D334B1386F3728915FFEFFC /* ios_shell_parser.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = ios_shell_parser.h; sourceTree = "<group>"; };
+		4FB9314A099234AD4A60D5F3 /* vim9instr.c */ = {isa = PBXFileReference; includeInIndex = 1; name = vim9instr.c; path = vim/src/vim9instr.c; sourceTree = "<group>"; };
+		50ACA9B8AB9A9124165CAF20 /* vim9cmds.c */ = {isa = PBXFileReference; includeInIndex = 1; name = vim9cmds.c; path = vim/src/vim9cmds.c; sourceTree = "<group>"; };
+		51D2A371031544C79382A3D9 /* normal.c */ = {isa = PBXFileReference; includeInIndex = 1; name = normal.c; path = vim/src/normal.c; sourceTree = "<group>"; };
+		5493545BEBEE671E8786D458 /* vim9class.c */ = {isa = PBXFileReference; includeInIndex = 1; name = vim9class.c; path = vim/src/vim9class.c; sourceTree = "<group>"; };
+		57EBC231CF5EB03FA86AC021 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS12.2.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
+		58D7B793071529C31F3C7661 /* gc.c */ = {isa = PBXFileReference; includeInIndex = 1; name = gc.c; path = vim/src/gc.c; sourceTree = "<group>"; };
+		5AA46EF28EBC71EF959356E9 /* regexp.c */ = {isa = PBXFileReference; includeInIndex = 1; name = regexp.c; path = vim/src/regexp.c; sourceTree = "<group>"; };
+		5AA72A2B998330C9120896AE /* alloc.c */ = {isa = PBXFileReference; includeInIndex = 1; name = alloc.c; path = vim/src/alloc.c; sourceTree = "<group>"; };
+		5C56839F9A623F640254C9A1 /* main.c */ = {isa = PBXFileReference; includeInIndex = 1; name = main.c; path = vim/src/main.c; sourceTree = "<group>"; };
+		5D743000A5FBE99D064D68C7 /* mbyte.c */ = {isa = PBXFileReference; includeInIndex = 1; name = mbyte.c; path = vim/src/mbyte.c; sourceTree = "<group>"; };
+		5ED873333DF1CC1E95187393 /* window.c */ = {isa = PBXFileReference; includeInIndex = 1; name = window.c; path = vim/src/window.c; sourceTree = "<group>"; };
+		5EFA2B473DE9D2A33477AFEC /* search.c */ = {isa = PBXFileReference; includeInIndex = 1; name = search.c; path = vim/src/search.c; sourceTree = "<group>"; };
 		602C119EDFA187FCE1B9CC28 /* ios_pipeline.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = ios_pipeline.h; sourceTree = "<group>"; };
-		64FC477A3FC8D8AE65B55D3F /* ios_buffered_pipe.c */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.c; path = ios_buffered_pipe.c; sourceTree = "<group>"; };
-		6C9B020F08382FB8FD758811 /* ios_env_manager.c */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.c; path = ios_env_manager.c; sourceTree = "<group>"; };
+		61165929CC328FF4BA896FE4 /* version.c */ = {isa = PBXFileReference; includeInIndex = 1; name = version.c; path = vim/src/version.c; sourceTree = "<group>"; };
+		6138B897F8E337B7A9CBA7CD /* strings.c */ = {isa = PBXFileReference; includeInIndex = 1; name = strings.c; path = vim/src/strings.c; sourceTree = "<group>"; };
+		642BBDB7C3A8C55389AA302D /* syntax.c */ = {isa = PBXFileReference; includeInIndex = 1; name = syntax.c; path = vim/src/syntax.c; sourceTree = "<group>"; };
+		647AA0467AFB22B650E161FC /* move.c */ = {isa = PBXFileReference; includeInIndex = 1; name = move.c; path = vim/src/move.c; sourceTree = "<group>"; };
+		64FC477A3FC8D8AE65B55D3F /* ios_buffered_pipe.c */ = {isa = PBXFileReference; includeInIndex = 1; path = ios_buffered_pipe.c; sourceTree = "<group>"; };
+		6593ED97D940B900DF0C94D6 /* hashtab.c */ = {isa = PBXFileReference; includeInIndex = 1; name = hashtab.c; path = vim/src/hashtab.c; sourceTree = "<group>"; };
+		6683F70EF94314B3F492B1A4 /* filepath.c */ = {isa = PBXFileReference; includeInIndex = 1; name = filepath.c; path = vim/src/filepath.c; sourceTree = "<group>"; };
+		66D291BDC1AF912405A7DD7F /* locale.c */ = {isa = PBXFileReference; includeInIndex = 1; name = locale.c; path = vim/src/locale.c; sourceTree = "<group>"; };
+		670E850F38D3164EB1B16340 /* fileio.c */ = {isa = PBXFileReference; includeInIndex = 1; name = fileio.c; path = vim/src/fileio.c; sourceTree = "<group>"; };
+		6735C9CA0FD31AE60999A4CA /* hardcopy.c */ = {isa = PBXFileReference; includeInIndex = 1; name = hardcopy.c; path = vim/src/hardcopy.c; sourceTree = "<group>"; };
+		6A6A4ACF5F03212B7E5B7F73 /* profiler.c */ = {isa = PBXFileReference; includeInIndex = 1; name = profiler.c; path = vim/src/profiler.c; sourceTree = "<group>"; };
+		6ADC02719D71AED4466E0A0E /* vim9type.c */ = {isa = PBXFileReference; includeInIndex = 1; name = vim9type.c; path = vim/src/vim9type.c; sourceTree = "<group>"; };
+		6C1998EA1C6AD4391A1F6C02 /* ex_cmds2.c */ = {isa = PBXFileReference; includeInIndex = 1; name = ex_cmds2.c; path = vim/src/ex_cmds2.c; sourceTree = "<group>"; };
+		6C9B020F08382FB8FD758811 /* ios_env_manager.c */ = {isa = PBXFileReference; includeInIndex = 1; path = ios_env_manager.c; sourceTree = "<group>"; };
+		6CD65F508488135B316760C3 /* misc1.c */ = {isa = PBXFileReference; includeInIndex = 1; name = misc1.c; path = vim/src/misc1.c; sourceTree = "<group>"; };
+		6EC3435D3E0F8A29207BD410 /* memline.c */ = {isa = PBXFileReference; includeInIndex = 1; name = memline.c; path = vim/src/memline.c; sourceTree = "<group>"; };
+		7748E851C4955DA4F57379FF /* testing.c */ = {isa = PBXFileReference; includeInIndex = 1; name = testing.c; path = vim/src/testing.c; sourceTree = "<group>"; };
+		77FC73A7A8F516344770B595 /* highlight.c */ = {isa = PBXFileReference; includeInIndex = 1; name = highlight.c; path = vim/src/highlight.c; sourceTree = "<group>"; };
+		781936636F833B35BC218FA7 /* os_unix.c */ = {isa = PBXFileReference; includeInIndex = 1; name = os_unix.c; path = vim/src/os_unix.c; sourceTree = "<group>"; };
+		793F700424F9E79218D5899D /* evalfunc.c */ = {isa = PBXFileReference; includeInIndex = 1; name = evalfunc.c; path = vim/src/evalfunc.c; sourceTree = "<group>"; };
 		7953FF85AD87F55CB1E676E1 /* ios_session_manager.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = ios_session_manager.m; sourceTree = "<group>"; };
-		BE64637BF8DD05FCA627B6A8 /* ios_interpreter_pool.c */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.c; path = ios_interpreter_pool.c; sourceTree = "<group>"; };
+		7AF52D98575B4A313FA31FD4 /* popupmenu.c */ = {isa = PBXFileReference; includeInIndex = 1; name = popupmenu.c; path = vim/src/popupmenu.c; sourceTree = "<group>"; };
+		7DA71F30C28C0FC2535A1EEA /* evalwindow.c */ = {isa = PBXFileReference; includeInIndex = 1; name = evalwindow.c; path = vim/src/evalwindow.c; sourceTree = "<group>"; };
+		7F869F92B9EF0FF6F20CEC66 /* tabpanel.c */ = {isa = PBXFileReference; includeInIndex = 1; name = tabpanel.c; path = vim/src/tabpanel.c; sourceTree = "<group>"; };
+		804DD4935BC4BEA0FD8AD5FA /* quickfix.c */ = {isa = PBXFileReference; includeInIndex = 1; name = quickfix.c; path = vim/src/quickfix.c; sourceTree = "<group>"; };
+		8098C9B702A70D5BD226204C /* xemit.c */ = {isa = PBXFileReference; includeInIndex = 1; name = xemit.c; path = vim/src/xdiff/xemit.c; sourceTree = "<group>"; };
+		814E06BBC54B65B8AD1F9B97 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; name = Info.plist; path = vim_framework/Info.plist; sourceTree = "<group>"; };
+		82AC59F4A04EBF5620F9972A /* spellfile.c */ = {isa = PBXFileReference; includeInIndex = 1; name = spellfile.c; path = vim/src/spellfile.c; sourceTree = "<group>"; };
+		85EA10723C810AAC36268165 /* menu.c */ = {isa = PBXFileReference; includeInIndex = 1; name = menu.c; path = vim/src/menu.c; sourceTree = "<group>"; };
+		875FB191B71E4780F891D880 /* ex_getln.c */ = {isa = PBXFileReference; includeInIndex = 1; name = ex_getln.c; path = vim/src/ex_getln.c; sourceTree = "<group>"; };
+		8846C9C5C0357FA788B52362 /* autocmd.c */ = {isa = PBXFileReference; includeInIndex = 1; name = autocmd.c; path = vim/src/autocmd.c; sourceTree = "<group>"; };
+		894C7B7116624900D5EB100D /* beval.c */ = {isa = PBXFileReference; includeInIndex = 1; name = beval.c; path = vim/src/beval.c; sourceTree = "<group>"; };
+		8B73B8DBC8140349B9877964 /* misc2.c */ = {isa = PBXFileReference; includeInIndex = 1; name = misc2.c; path = vim/src/misc2.c; sourceTree = "<group>"; };
+		8C74A15459E1DD31297A6C69 /* crypt.c */ = {isa = PBXFileReference; includeInIndex = 1; name = crypt.c; path = vim/src/crypt.c; sourceTree = "<group>"; };
+		9661B77B497B448AB0AA57F3 /* drawscreen.c */ = {isa = PBXFileReference; includeInIndex = 1; name = drawscreen.c; path = vim/src/drawscreen.c; sourceTree = "<group>"; };
+		9799A0EE13A44EA0ED5D04CB /* textformat.c */ = {isa = PBXFileReference; includeInIndex = 1; name = textformat.c; path = vim/src/textformat.c; sourceTree = "<group>"; };
+		9AE25DCBF872D6D54EC9B8A5 /* blob.c */ = {isa = PBXFileReference; includeInIndex = 1; name = blob.c; path = vim/src/blob.c; sourceTree = "<group>"; };
+		9C3A62640A7D98DBA3558BD1 /* list.c */ = {isa = PBXFileReference; includeInIndex = 1; name = list.c; path = vim/src/list.c; sourceTree = "<group>"; };
+		9DEEDCDA4C649557511A9C3F /* memfile.c */ = {isa = PBXFileReference; includeInIndex = 1; name = memfile.c; path = vim/src/memfile.c; sourceTree = "<group>"; };
+		9F960DDB3DF55F32B11A6340 /* ui.c */ = {isa = PBXFileReference; includeInIndex = 1; name = ui.c; path = vim/src/ui.c; sourceTree = "<group>"; };
+		A04B09820164C9018FA35ECC /* tag.c */ = {isa = PBXFileReference; includeInIndex = 1; name = tag.c; path = vim/src/tag.c; sourceTree = "<group>"; };
+		A1A4371C545D059905203805 /* diff.c */ = {isa = PBXFileReference; includeInIndex = 1; name = diff.c; path = vim/src/diff.c; sourceTree = "<group>"; };
+		A1FA7ADD66CF5FE7C3D8EEE3 /* sha256.c */ = {isa = PBXFileReference; includeInIndex = 1; name = sha256.c; path = vim/src/sha256.c; sourceTree = "<group>"; };
+		A377BA12ED8A2E11C4C6F6F5 /* findfile.c */ = {isa = PBXFileReference; includeInIndex = 1; name = findfile.c; path = vim/src/findfile.c; sourceTree = "<group>"; };
+		A99707022A7276D35F0DE252 /* ops.c */ = {isa = PBXFileReference; includeInIndex = 1; name = ops.c; path = vim/src/ops.c; sourceTree = "<group>"; };
+		A9B38EDE6262E937223F4C93 /* insexpand.c */ = {isa = PBXFileReference; includeInIndex = 1; name = insexpand.c; path = vim/src/insexpand.c; sourceTree = "<group>"; };
+		AB3565B5CF967EDD008EAFBD /* ios_vim.m */ = {isa = PBXFileReference; includeInIndex = 1; name = ios_vim.m; path = vim/src/ios_vim.m; sourceTree = "<group>"; };
+		AB84C398B7CB0693F64813DD /* clientserver.c */ = {isa = PBXFileReference; includeInIndex = 1; name = clientserver.c; path = vim/src/clientserver.c; sourceTree = "<group>"; };
+		ADFDA7BA69991F779470F4BE /* indent.c */ = {isa = PBXFileReference; includeInIndex = 1; name = indent.c; path = vim/src/indent.c; sourceTree = "<group>"; };
+		B1A5BCE6728B0DA08FBA064A /* evalbuffer.c */ = {isa = PBXFileReference; includeInIndex = 1; name = evalbuffer.c; path = vim/src/evalbuffer.c; sourceTree = "<group>"; };
+		B267D05CEC1A7365A0AF4B18 /* spellsuggest.c */ = {isa = PBXFileReference; includeInIndex = 1; name = spellsuggest.c; path = vim/src/spellsuggest.c; sourceTree = "<group>"; };
+		B519BC3E63A068E2E61416BE /* match.c */ = {isa = PBXFileReference; includeInIndex = 1; name = match.c; path = vim/src/match.c; sourceTree = "<group>"; };
+		B5D05071145F60D053A032DC /* map.c */ = {isa = PBXFileReference; includeInIndex = 1; name = map.c; path = vim/src/map.c; sourceTree = "<group>"; };
+		B8A2CEE0985F0F3EA1D7945C /* ex_cmds.c */ = {isa = PBXFileReference; includeInIndex = 1; name = ex_cmds.c; path = vim/src/ex_cmds.c; sourceTree = "<group>"; };
+		BAF2CBC59A307113278823FC /* ios_shell_parser.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = ios_shell_parser.m; sourceTree = "<group>"; };
+		BB658FD8E681099946CAD35A /* crypt_zip.c */ = {isa = PBXFileReference; includeInIndex = 1; name = crypt_zip.c; path = vim/src/crypt_zip.c; sourceTree = "<group>"; };
+		BCB33AE0BAC1B46F40B2545C /* xhistogram.c */ = {isa = PBXFileReference; includeInIndex = 1; name = xhistogram.c; path = vim/src/xdiff/xhistogram.c; sourceTree = "<group>"; };
+		BE64637BF8DD05FCA627B6A8 /* ios_interpreter_pool.c */ = {isa = PBXFileReference; includeInIndex = 1; path = ios_interpreter_pool.c; sourceTree = "<group>"; };
+		BFD303CED4D1FC7BFF890F2D /* fold.c */ = {isa = PBXFileReference; includeInIndex = 1; name = fold.c; path = vim/src/fold.c; sourceTree = "<group>"; };
+		C0106DCAABE5289E52DA556F /* cmdhist.c */ = {isa = PBXFileReference; includeInIndex = 1; name = cmdhist.c; path = vim/src/cmdhist.c; sourceTree = "<group>"; };
+		C16530512B54E2AAD6AD95AF /* sign.c */ = {isa = PBXFileReference; includeInIndex = 1; name = sign.c; path = vim/src/sign.c; sourceTree = "<group>"; };
+		C1C76AA0FAD4FE8552706405 /* vim9compile.c */ = {isa = PBXFileReference; includeInIndex = 1; name = vim9compile.c; path = vim/src/vim9compile.c; sourceTree = "<group>"; };
+		C3398517A0D4D242E333782C /* termlib.c */ = {isa = PBXFileReference; includeInIndex = 1; name = termlib.c; path = vim/src/termlib.c; sourceTree = "<group>"; };
+		C792369AD1DE90CB7E20497B /* bufwrite.c */ = {isa = PBXFileReference; includeInIndex = 1; name = bufwrite.c; path = vim/src/bufwrite.c; sourceTree = "<group>"; };
+		C873DD142966C86C04C74EF5 /* scriptfile.c */ = {isa = PBXFileReference; includeInIndex = 1; name = scriptfile.c; path = vim/src/scriptfile.c; sourceTree = "<group>"; };
+		CE73FE6F9A556DC5D77F5940 /* eval.c */ = {isa = PBXFileReference; includeInIndex = 1; name = eval.c; path = vim/src/eval.c; sourceTree = "<group>"; };
 		D212F98A25B066E9007F5D2D /* libssh2.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libssh2.xcframework; path = "../libssh2-for-iOS/libssh2.xcframework"; sourceTree = "<group>"; };
-		D212F99525B06810007F5D2D /* openssl.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = openssl.xcframework; path = "../libssh2-for-iOS/openssl.xcframework"; sourceTree = "<group>"; };
-		D212F99625B06811007F5D2D /* libcrypto.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libcrypto.xcframework; path = "../libssh2-for-iOS/libcrypto.xcframework"; sourceTree = "<group>"; };
+		D212F99525B06810007F5D2D /* openssl.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = openssl.xcframework; path = "../libssh2-for-iOS/libssl.xcframework"; sourceTree = "<group>"; };
 		D285143125B1D7CD003405B4 /* sshkey.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sshkey.h; path = ssh_keygen/sshkey.h; sourceTree = "<group>"; };
 		D285144325B1DE19003405B4 /* cipher.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = cipher.h; path = ssh_keygen/cipher.h; sourceTree = "<group>"; };
 		D285145525B1DE61003405B4 /* ssherr.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ssherr.h; path = ssh_keygen/ssherr.h; sourceTree = "<group>"; };
@@ -1580,140 +1821,35 @@
 		D285147925B1E4DC003405B4 /* openbsd-compat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "openbsd-compat.h"; path = "ssh_keygen/openbsd-compat/openbsd-compat.h"; sourceTree = "<group>"; };
 		D285149B25B200B9003405B4 /* openssl-compat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "openssl-compat.h"; path = "ssh_keygen/openbsd-compat/openssl-compat.h"; sourceTree = "<group>"; };
 		D28514A525B20351003405B4 /* config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = config.h; path = ssh_keygen/config.h; sourceTree = "<group>"; };
-		DC5C39152FD3989717D10E2E /* ios_pipeline.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = ios_pipeline.m; sourceTree = "<group>"; };
-		3BD4EAA5950D411792157F4D /* ios_shell_parser.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = ios_shell_parser.m; sourceTree = "<group>"; };
-		590D9297FBA741D09D39E3AA /* ios_shell_parser.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = ios_shell_parser.h; sourceTree = "<group>"; };
-		F4CCBCAF5225A15765AD4165 /* ios_pid_allocator.c */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.c; path = ios_pid_allocator.c; sourceTree = "<group>"; };
+		D295D7A08F80521BE6D60F1B /* message.c */ = {isa = PBXFileReference; includeInIndex = 1; name = message.c; path = vim/src/message.c; sourceTree = "<group>"; };
+		D2E05711CFAEA6EFFD2BCED2 /* vim.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = vim.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		D85765D4385AAFAD40C5F07F /* regexp_bt.c */ = {isa = PBXFileReference; includeInIndex = 1; name = regexp_bt.c; path = vim/src/regexp_bt.c; sourceTree = "<group>"; };
+		D8C05483ECBE5C507B8BC056 /* mouse.c */ = {isa = PBXFileReference; includeInIndex = 1; name = mouse.c; path = vim/src/mouse.c; sourceTree = "<group>"; };
+		D998F6F097B00D63118878A7 /* VimRuntime.bundle */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = "wrapper.plug-in"; name = VimRuntime.bundle; path = vim_framework/VimRuntime.bundle; sourceTree = "<group>"; };
+		DC5C39152FD3989717D10E2E /* ios_pipeline.m */ = {isa = PBXFileReference; includeInIndex = 1; path = ios_pipeline.m; sourceTree = "<group>"; };
+		DE67E6581DA2A16C6F4E8E8D /* mark.c */ = {isa = PBXFileReference; includeInIndex = 1; name = mark.c; path = vim/src/mark.c; sourceTree = "<group>"; };
+		E0734E86938F26EE59844B25 /* xutils.c */ = {isa = PBXFileReference; includeInIndex = 1; name = xutils.c; path = vim/src/xdiff/xutils.c; sourceTree = "<group>"; };
+		E0E026771497675666E2AF39 /* vim9execute.c */ = {isa = PBXFileReference; includeInIndex = 1; name = vim9execute.c; path = vim/src/vim9execute.c; sourceTree = "<group>"; };
+		E7178774EBFDC2C5AC2749E1 /* fuzzy.c */ = {isa = PBXFileReference; includeInIndex = 1; name = fuzzy.c; path = vim/src/fuzzy.c; sourceTree = "<group>"; };
+		EB2695A2993A83D0A2C5FDCE /* register.c */ = {isa = PBXFileReference; includeInIndex = 1; name = register.c; path = vim/src/register.c; sourceTree = "<group>"; };
+		EC4B6185402673E3324069C1 /* typval.c */ = {isa = PBXFileReference; includeInIndex = 1; name = typval.c; path = vim/src/typval.c; sourceTree = "<group>"; };
+		EDC1074CA26A9A4BDCA9AECA /* change.c */ = {isa = PBXFileReference; includeInIndex = 1; name = change.c; path = vim/src/change.c; sourceTree = "<group>"; };
+		EFA3C8231F927ECF7B4F6189 /* undo.c */ = {isa = PBXFileReference; includeInIndex = 1; name = undo.c; path = vim/src/undo.c; sourceTree = "<group>"; };
+		F1C35A720062F92005DE00B5 /* textprop.c */ = {isa = PBXFileReference; includeInIndex = 1; name = textprop.c; path = vim/src/textprop.c; sourceTree = "<group>"; };
+		F1FCB3F08C25E042C355C414 /* vim.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = vim.h; path = vim_framework/vim.h; sourceTree = "<group>"; };
+		F3E56A152ACD4EAEB5D364C1 /* float.c */ = {isa = PBXFileReference; includeInIndex = 1; name = float.c; path = vim/src/float.c; sourceTree = "<group>"; };
+		F4CCBCAF5225A15765AD4165 /* ios_pid_allocator.c */ = {isa = PBXFileReference; includeInIndex = 1; path = ios_pid_allocator.c; sourceTree = "<group>"; };
+		F4ED359B8C47BDD5572F9792 /* edit.c */ = {isa = PBXFileReference; includeInIndex = 1; name = edit.c; path = vim/src/edit.c; sourceTree = "<group>"; };
+		F6D54B55C861A2C1AC040ED9 /* ex_docmd.c */ = {isa = PBXFileReference; includeInIndex = 1; name = ex_docmd.c; path = vim/src/ex_docmd.c; sourceTree = "<group>"; };
+		F762477D8066BBC2477770B4 /* textobject.c */ = {isa = PBXFileReference; includeInIndex = 1; name = textobject.c; path = vim/src/textobject.c; sourceTree = "<group>"; };
+		F924AB1CA1AAE364E409B71F /* time.c */ = {isa = PBXFileReference; includeInIndex = 1; name = time.c; path = vim/src/time.c; sourceTree = "<group>"; };
+		F94F209B8F4EB83CF3D4A3CD /* optionstr.c */ = {isa = PBXFileReference; includeInIndex = 1; name = optionstr.c; path = vim/src/optionstr.c; sourceTree = "<group>"; };
+		F977B018F55354A0EC925138 /* debugger.c */ = {isa = PBXFileReference; includeInIndex = 1; name = debugger.c; path = vim/src/debugger.c; sourceTree = "<group>"; };
+		F9AF440C43BB8ABC183DE235 /* os_mac_conv.c */ = {isa = PBXFileReference; includeInIndex = 1; name = os_mac_conv.c; path = vim/src/os_mac_conv.c; sourceTree = "<group>"; };
+		FDA8063F240E56C6CD5BE027 /* popupwin.c */ = {isa = PBXFileReference; includeInIndex = 1; name = popupwin.c; path = vim/src/popupwin.c; sourceTree = "<group>"; };
+		FEB2FA704CE6E65F3FCA2053 /* regexp_nfa.c */ = {isa = PBXFileReference; includeInIndex = 1; name = regexp_nfa.c; path = vim/src/regexp_nfa.c; sourceTree = "<group>"; };
+		FFC64C535B060F17BA492866 /* spell.c */ = {isa = PBXFileReference; includeInIndex = 1; name = spell.c; path = vim/src/spell.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
-
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		4707737D2EE0DE350012B882 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				joe/b.c,
-				joe/b.h,
-				joe/blocks.c,
-				joe/blocks.h,
-				joe/builtin.c,
-				joe/builtin.h,
-				joe/builtins.c,
-				joe/bw.c,
-				joe/bw.h,
-				joe/cclass.c,
-				joe/cclass.h,
-				joe/charmap.c,
-				joe/charmap.h,
-				joe/cmd.c,
-				joe/cmd.h,
-				joe/colors.c,
-				joe/colors.h,
-				joe/config.h,
-				joe/EngNotation.c,
-				joe/EngNotation.h,
-				joe/frag.c,
-				joe/frag.h,
-				joe/gettext.c,
-				joe/gettext.h,
-				joe/hash.c,
-				joe/hash.h,
-				joe/help.c,
-				joe/help.h,
-				joe/ios_compat.h,
-				joe/kbd.c,
-				joe/kbd.h,
-				joe/lattr.c,
-				joe/lattr.h,
-				joe/macro.c,
-				joe/macro.h,
-				joe/main.c,
-				joe/main.h,
-				joe/Makefile.am,
-				joe/menu.c,
-				joe/menu.h,
-				joe/mmenu.c,
-				joe/mmenu.h,
-				joe/mouse.c,
-				joe/mouse.h,
-				joe/options.c,
-				joe/options.h,
-				joe/path.c,
-				joe/path.h,
-				joe/poshist.c,
-				joe/poshist.h,
-				joe/pw.c,
-				joe/pw.h,
-				joe/queue.c,
-				joe/queue.h,
-				joe/qw.c,
-				joe/qw.h,
-				joe/rc.c,
-				joe/rc.h,
-				joe/regex.c,
-				joe/regex.h,
-				joe/scrn.c,
-				joe/scrn.h,
-				joe/state.c,
-				joe/state.h,
-				joe/syntax.c,
-				joe/syntax.h,
-				joe/tab.c,
-				joe/tab.h,
-				joe/termcap.c,
-				joe/termcapj.h,
-				joe/TODO,
-				joe/tty.c,
-				joe/tty.h,
-				joe/tw.c,
-				joe/tw.h,
-				joe/types.h,
-				joe/ublock.c,
-				joe/ublock.h,
-				joe/uedit.c,
-				joe/uedit.h,
-				joe/uerror.c,
-				joe/uerror.h,
-				joe/ufile.c,
-				joe/ufile.h,
-				joe/uformat.c,
-				joe/uformat.h,
-				joe/uisrch.c,
-				joe/uisrch.h,
-				joe/umath.c,
-				joe/umath.h,
-				joe/undo.c,
-				joe/undo.h,
-				"joe/unicat-10.0.0.c",
-				joe/unicode.c,
-				joe/unicode.h,
-				joe/usearch.c,
-				joe/usearch.h,
-				joe/ushell.c,
-				joe/ushell.h,
-				joe/utag.c,
-				joe/utag.h,
-				joe/utf8.c,
-				joe/utf8.h,
-				joe/utils.c,
-				joe/utils.h,
-				joe/va.c,
-				joe/va.h,
-				joe/vfile.c,
-				joe/vfile.h,
-				joe/vs.c,
-				joe/vs.h,
-				joe/vt.c,
-				joe/vt.h,
-				joe/w.c,
-				joe/w.h,
-			);
-			target = 47076C7C2EE0D7BE0012B882 /* joe */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
-/* Begin PBXFileSystemSynchronizedRootGroup section */
-		470769AD2EE0D7860012B882 /* joe */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (4707737D2EE0DE350012B882 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = joe; sourceTree = "<group>"; };
-		470769BA2EE0D7860012B882 /* joeTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = joeTests; sourceTree = "<group>"; };
-/* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		223496A71FD5FC71007ED1A9 /* Frameworks */ = {
@@ -1825,18 +1961,42 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		47076C872EE0D7BE0012B882 /* Frameworks */ = {
+		A8DBF8B6E011363167BB9F26 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				47076C882EE0D7BE0012B882 /* ios_system.framework in Frameworks */,
-				47076CAA2EE0FFFF0012B882 /* libncurses.tbd in Frameworks */,
+				8045FF4134C871495B67BF4F /* Foundation.framework in Frameworks */,
+				3C6D9744BD799ED17910B645 /* ios_system.framework in Frameworks */,
+				5233E9CFA3DBFF629A8DB5FF /* libncurses.tbd in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		046E205AF7D675EF2D441983 /* vim_framework */ = {
+			isa = PBXGroup;
+			children = (
+				F1FCB3F08C25E042C355C414 /* vim.h */,
+				814E06BBC54B65B8AD1F9B97 /* Info.plist */,
+				D998F6F097B00D63118878A7 /* VimRuntime.bundle */,
+			);
+			name = vim_framework;
+			sourceTree = "<group>";
+		};
+		1A72DAEE97BC8F15AD3873C4 /* xdiff */ = {
+			isa = PBXGroup;
+			children = (
+				156887B4CFDF00AED99BADE9 /* xdiffi.c */,
+				8098C9B702A70D5BD226204C /* xemit.c */,
+				BCB33AE0BAC1B46F40B2545C /* xhistogram.c */,
+				1439F796BC5683C052EC8604 /* xpatience.c */,
+				1248FD73325E8DE1B7E9B63A /* xprepare.c */,
+				E0734E86938F26EE59844B25 /* xutils.c */,
+			);
+			name = xdiff;
+			sourceTree = "<group>";
+		};
 		222419CC2A90A17E003AB5B7 /* vquic */ = {
 			isa = PBXGroup;
 			children = (
@@ -1899,8 +2059,6 @@
 				22878D4B2036212E00286AF1 /* ssh */,
 				223EF2F62B96246A00A8ED5A /* sshd */,
 				224DF70F2B75712C00F13C58 /* ssh-agent */,
-				470769AD2EE0D7860012B882 /* joe */,
-				470769BA2EE0D7860012B882 /* joeTests */,
 				223496AC1FD5FC71007ED1A9 /* Products */,
 				223497AB1FD6CF7A007ED1A9 /* Frameworks */,
 				225478B42B6D903B005041FF /* ssh_cmd copy-Info.plist */,
@@ -1913,13 +2071,14 @@
 				7953FF85AD87F55CB1E676E1 /* ios_session_manager.m */,
 				DC5C39152FD3989717D10E2E /* ios_pipeline.m */,
 				602C119EDFA187FCE1B9CC28 /* ios_pipeline.h */,
-				3BD4EAA5950D411792157F4D /* ios_shell_parser.m */,
-				590D9297FBA741D09D39E3AA /* ios_shell_parser.h */,
 				29F300FE4EC5898C70CEC71F /* ios_pid_allocator.h */,
 				F4CCBCAF5225A15765AD4165 /* ios_pid_allocator.c */,
 				4385685B6FF5BE250B8894AC /* ios_async.h */,
 				1DC97367A0FF6E503474FD03 /* ios_async.m */,
-				47076C902EE0D7BE0012B882 /* awk copy-Info.plist */,
+				7930B0EFBC2A3C0EAC648052 /* vim */,
+				046E205AF7D675EF2D441983 /* vim_framework */,
+				BAF2CBC59A307113278823FC /* ios_shell_parser.m */,
+				4D334B1386F3728915FFEFFC /* ios_shell_parser.h */,
 			);
 			sourceTree = "<group>";
 		};
@@ -1937,7 +2096,7 @@
 				225479322B73814B005041FF /* ssh_cmdA.framework */,
 				224DF70E2B75712B00F13C58 /* ssh_agent.framework */,
 				223EF29B2B9623CA00A8ED5A /* sshd.framework */,
-				47076C8F2EE0D7BE0012B882 /* joe.framework */,
+				D2E05711CFAEA6EFFD2BCED2 /* vim.framework */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -1958,13 +2117,14 @@
 				224DF7332B757AE200F13C58 /* libresolv.9.tbd */,
 				22B114742817CABD00A5BF16 /* libtermcap.tbd */,
 				D212F99525B06810007F5D2D /* openssl.xcframework */,
-				D212F99625B06811007F5D2D /* libcrypto.xcframework */,
 				D212F98A25B066E9007F5D2D /* libssh2.xcframework */,
 				227F87D6202EFA68001751C6 /* libncurses.tbd */,
 				2253BA1D201942B10019CB39 /* libresolv.9.tbd */,
 				22F568222020C42F009850FD /* libxml2.tbd */,
 				22F567DD2020BAD9009850FD /* libz.tbd */,
 				22CF27AC1FDB42AF0087DDAD /* libbz2.tbd */,
+				644FB4C8F8A3C2285B278793 /* iOS */,
+				4615932ADA6745B80454C4CB /* libncurses.tbd */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -3146,6 +3306,151 @@
 			path = curl;
 			sourceTree = "<group>";
 		};
+		644FB4C8F8A3C2285B278793 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				57EBC231CF5EB03FA86AC021 /* Foundation.framework */,
+			);
+			name = iOS;
+			sourceTree = "<group>";
+		};
+		7930B0EFBC2A3C0EAC648052 /* vim */ = {
+			isa = PBXGroup;
+			children = (
+				FCBE97BAC861C5AB0EC8CA08 /* src */,
+			);
+			name = vim;
+			sourceTree = "<group>";
+		};
+		FCBE97BAC861C5AB0EC8CA08 /* src */ = {
+			isa = PBXGroup;
+			children = (
+				5AA72A2B998330C9120896AE /* alloc.c */,
+				303CD505A1C17DAAFBFCED58 /* arabic.c */,
+				196D8EBB5A4AAF3D6BA9FF0E /* arglist.c */,
+				8846C9C5C0357FA788B52362 /* autocmd.c */,
+				894C7B7116624900D5EB100D /* beval.c */,
+				9AE25DCBF872D6D54EC9B8A5 /* blob.c */,
+				390C4525A2DD5B26DB6EB703 /* blowfish.c */,
+				0B3215A3546D29775C78C3EC /* buffer.c */,
+				C792369AD1DE90CB7E20497B /* bufwrite.c */,
+				EDC1074CA26A9A4BDCA9AECA /* change.c */,
+				2D6D5C50B1A685475E2F2F94 /* charset.c */,
+				2E25B058F324CA2B8CB8BF38 /* cindent.c */,
+				AB84C398B7CB0693F64813DD /* clientserver.c */,
+				16FE603D79C3DA36B49D9B83 /* clipboard.c */,
+				15045F3FBABBFE6CB40604BD /* cmdexpand.c */,
+				C0106DCAABE5289E52DA556F /* cmdhist.c */,
+				8C74A15459E1DD31297A6C69 /* crypt.c */,
+				BB658FD8E681099946CAD35A /* crypt_zip.c */,
+				F977B018F55354A0EC925138 /* debugger.c */,
+				25612E0FF751C3A84DB5BFA3 /* dict.c */,
+				A1A4371C545D059905203805 /* diff.c */,
+				109268A9919FA2E2B6AACFE9 /* digraph.c */,
+				0A7E2B6CAAFA61CAF84B3900 /* drawline.c */,
+				9661B77B497B448AB0AA57F3 /* drawscreen.c */,
+				F4ED359B8C47BDD5572F9792 /* edit.c */,
+				CE73FE6F9A556DC5D77F5940 /* eval.c */,
+				B1A5BCE6728B0DA08FBA064A /* evalbuffer.c */,
+				793F700424F9E79218D5899D /* evalfunc.c */,
+				26D5CF8EF53B259D3961E7B4 /* evalvars.c */,
+				7DA71F30C28C0FC2535A1EEA /* evalwindow.c */,
+				B8A2CEE0985F0F3EA1D7945C /* ex_cmds.c */,
+				6C1998EA1C6AD4391A1F6C02 /* ex_cmds2.c */,
+				F6D54B55C861A2C1AC040ED9 /* ex_docmd.c */,
+				07A40CBC6C40EE3639CF11CA /* ex_eval.c */,
+				875FB191B71E4780F891D880 /* ex_getln.c */,
+				670E850F38D3164EB1B16340 /* fileio.c */,
+				6683F70EF94314B3F492B1A4 /* filepath.c */,
+				A377BA12ED8A2E11C4C6F6F5 /* findfile.c */,
+				F3E56A152ACD4EAEB5D364C1 /* float.c */,
+				BFD303CED4D1FC7BFF890F2D /* fold.c */,
+				E7178774EBFDC2C5AC2749E1 /* fuzzy.c */,
+				58D7B793071529C31F3C7661 /* gc.c */,
+				4878744568C484AF7BF6ADDE /* getchar.c */,
+				6735C9CA0FD31AE60999A4CA /* hardcopy.c */,
+				6593ED97D940B900DF0C94D6 /* hashtab.c */,
+				2075311ECD89CA4AD92116B2 /* help.c */,
+				77FC73A7A8F516344770B595 /* highlight.c */,
+				ADFDA7BA69991F779470F4BE /* indent.c */,
+				A9B38EDE6262E937223F4C93 /* insexpand.c */,
+				AB3565B5CF967EDD008EAFBD /* ios_vim.m */,
+				2586D6A95A9AE0C8D42ABB75 /* json.c */,
+				2CF54BFEC491A0EFFFC8CE57 /* linematch.c */,
+				9C3A62640A7D98DBA3558BD1 /* list.c */,
+				66D291BDC1AF912405A7DD7F /* locale.c */,
+				02E3469CE5BB85A89B85D950 /* logfile.c */,
+				5C56839F9A623F640254C9A1 /* main.c */,
+				B5D05071145F60D053A032DC /* map.c */,
+				DE67E6581DA2A16C6F4E8E8D /* mark.c */,
+				B519BC3E63A068E2E61416BE /* match.c */,
+				5D743000A5FBE99D064D68C7 /* mbyte.c */,
+				9DEEDCDA4C649557511A9C3F /* memfile.c */,
+				6EC3435D3E0F8A29207BD410 /* memline.c */,
+				85EA10723C810AAC36268165 /* menu.c */,
+				D295D7A08F80521BE6D60F1B /* message.c */,
+				6CD65F508488135B316760C3 /* misc1.c */,
+				8B73B8DBC8140349B9877964 /* misc2.c */,
+				D8C05483ECBE5C507B8BC056 /* mouse.c */,
+				647AA0467AFB22B650E161FC /* move.c */,
+				51D2A371031544C79382A3D9 /* normal.c */,
+				A99707022A7276D35F0DE252 /* ops.c */,
+				32093E70471D31F4551FCE34 /* option.c */,
+				F94F209B8F4EB83CF3D4A3CD /* optionstr.c */,
+				F9AF440C43BB8ABC183DE235 /* os_mac_conv.c */,
+				781936636F833B35BC218FA7 /* os_unix.c */,
+				7AF52D98575B4A313FA31FD4 /* popupmenu.c */,
+				FDA8063F240E56C6CD5BE027 /* popupwin.c */,
+				6A6A4ACF5F03212B7E5B7F73 /* profiler.c */,
+				804DD4935BC4BEA0FD8AD5FA /* quickfix.c */,
+				5AA46EF28EBC71EF959356E9 /* regexp.c */,
+				D85765D4385AAFAD40C5F07F /* regexp_bt.c */,
+				FEB2FA704CE6E65F3FCA2053 /* regexp_nfa.c */,
+				EB2695A2993A83D0A2C5FDCE /* register.c */,
+				2ED4A85D958437910A0E7DBE /* screen.c */,
+				C873DD142966C86C04C74EF5 /* scriptfile.c */,
+				5EFA2B473DE9D2A33477AFEC /* search.c */,
+				37A1F5DEE413BE3A7832DBF8 /* session.c */,
+				A1FA7ADD66CF5FE7C3D8EEE3 /* sha256.c */,
+				C16530512B54E2AAD6AD95AF /* sign.c */,
+				2CB1114EEDE032F7BA202BED /* sound.c */,
+				FFC64C535B060F17BA492866 /* spell.c */,
+				82AC59F4A04EBF5620F9972A /* spellfile.c */,
+				B267D05CEC1A7365A0AF4B18 /* spellsuggest.c */,
+				6138B897F8E337B7A9CBA7CD /* strings.c */,
+				642BBDB7C3A8C55389AA302D /* syntax.c */,
+				7F869F92B9EF0FF6F20CEC66 /* tabpanel.c */,
+				A04B09820164C9018FA35ECC /* tag.c */,
+				30C296E43D38834DCF823552 /* term.c */,
+				C3398517A0D4D242E333782C /* termlib.c */,
+				7748E851C4955DA4F57379FF /* testing.c */,
+				9799A0EE13A44EA0ED5D04CB /* textformat.c */,
+				F762477D8066BBC2477770B4 /* textobject.c */,
+				F1C35A720062F92005DE00B5 /* textprop.c */,
+				F924AB1CA1AAE364E409B71F /* time.c */,
+				0CA45B5007AE5B53601E0BA7 /* tuple.c */,
+				EC4B6185402673E3324069C1 /* typval.c */,
+				9F960DDB3DF55F32B11A6340 /* ui.c */,
+				EFA3C8231F927ECF7B4F6189 /* undo.c */,
+				3C22459AC5194C388D85A0A0 /* usercmd.c */,
+				46D51733B9E3F973FE253ACB /* userfunc.c */,
+				61165929CC328FF4BA896FE4 /* version.c */,
+				5493545BEBEE671E8786D458 /* vim9class.c */,
+				50ACA9B8AB9A9124165CAF20 /* vim9cmds.c */,
+				C1C76AA0FAD4FE8552706405 /* vim9compile.c */,
+				E0E026771497675666E2AF39 /* vim9execute.c */,
+				10A756CE6D58FD7CDDB0635A /* vim9expr.c */,
+				14C88F5ACB7DCFB0D9EC83CB /* vim9generics.c */,
+				4FB9314A099234AD4A60D5F3 /* vim9instr.c */,
+				0632B68047815850D1EF6489 /* vim9script.c */,
+				6ADC02719D71AED4466E0A0E /* vim9type.c */,
+				2FBFA979C2D3F4100DE80B48 /* viminfo.c */,
+				5ED873333DF1CC1E95187393 /* window.c */,
+				1A72DAEE97BC8F15AD3873C4 /* xdiff */,
+			);
+			name = src;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
@@ -3270,11 +3575,11 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		47076C892EE0D7BE0012B882 /* Headers */ = {
+		B88AA6BA45C9C1AB476CCCAB /* Headers */ = {
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				47076C8A2EE0D7BE0012B882 /* awk.h in Headers */,
+				14C07F117A6D17CC44C4437D /* vim.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3482,22 +3787,23 @@
 			productReference = 22F6A1AF20683F4100E618F9 /* curl_ios.framework */;
 			productType = "com.apple.product-type.framework";
 		};
-		47076C7C2EE0D7BE0012B882 /* joe */ = {
+		34507189C2AAD0608D74CB30 /* vim */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 47076C8C2EE0D7BE0012B882 /* Build configuration list for PBXNativeTarget "joe" */;
+			buildConfigurationList = 294D4608F0A89F89D556C468 /* Build configuration list for PBXNativeTarget "vim" */;
 			buildPhases = (
-				47076C7D2EE0D7BE0012B882 /* Sources */,
-				47076C872EE0D7BE0012B882 /* Frameworks */,
-				47076C892EE0D7BE0012B882 /* Headers */,
-				47076C8B2EE0D7BE0012B882 /* Resources */,
+				B88AA6BA45C9C1AB476CCCAB /* Headers */,
+				CCD298EFDE4D9FC6EDF93F9A /* Sources */,
+				A8DBF8B6E011363167BB9F26 /* Frameworks */,
+				49F2DAFD6BD7202782038A23 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				F2828D20CCF8A3212FF05867 /* PBXTargetDependency */,
 			);
-			name = joe;
-			productName = awk;
-			productReference = 47076C8F2EE0D7BE0012B882 /* joe.framework */;
+			name = vim;
+			productName = vim;
+			productReference = D2E05711CFAEA6EFFD2BCED2 /* vim.framework */;
 			productType = "com.apple.product-type.framework";
 		};
 /* End PBXNativeTarget section */
@@ -3506,7 +3812,6 @@
 		223496A21FD5FC71007ED1A9 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastSwiftUpdateCheck = 2610;
 				LastUpgradeCheck = 1010;
 				ORGANIZATIONNAME = "Nicolas Holzschuch";
 				TargetAttributes = {
@@ -3573,7 +3878,7 @@
 				225478B82B73814B005041FF /* ssh_cmdA */,
 				224DF70D2B75712B00F13C58 /* ssh_agent */,
 				223EF2132B9623CA00A8ED5A /* sshd */,
-				47076C7C2EE0D7BE0012B882 /* joe */,
+				34507189C2AAD0608D74CB30 /* vim */,
 			);
 		};
 /* End PBXProject section */
@@ -3656,10 +3961,11 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		47076C8B2EE0D7BE0012B882 /* Resources */ = {
+		49F2DAFD6BD7202782038A23 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				04D70875C1FC651378282CD2 /* VimRuntime.bundle in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3735,9 +4041,9 @@
 				AE9AEED215E292E3B6276B6C /* ios_buffered_pipe.c in Sources */,
 				1D707A058C450FBE2A9638BE /* ios_session_manager.m in Sources */,
 				C56F9E1A72F26E9BA1B53158 /* ios_pipeline.m in Sources */,
-				A44AD7419F3640C3B214F0DC /* ios_shell_parser.m in Sources */,
 				2453CC7309263DC6DFB500AB /* ios_pid_allocator.c in Sources */,
 				67DE21D6B73138B03F9DCFD8 /* ios_async.m in Sources */,
+				4E5A0A05CB4D947B065A73DB /* ios_shell_parser.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4619,14 +4925,146 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		47076C7D2EE0D7BE0012B882 /* Sources */ = {
+		CCD298EFDE4D9FC6EDF93F9A /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F6F1C0B3839F6F83605F13AD /* alloc.c in Sources */,
+				86D982EC5453143E15658C77 /* arabic.c in Sources */,
+				A93AA1B25E3ACDF20B303D50 /* arglist.c in Sources */,
+				936F515811732D8C7F8DB8E7 /* autocmd.c in Sources */,
+				2BD240845BDAB5BCA8DD6C3F /* beval.c in Sources */,
+				F5C4F2BA4F208CE57C7C1576 /* blob.c in Sources */,
+				23E21725A6015DCE07E015FF /* blowfish.c in Sources */,
+				C172E30745B0D7FDDF085D0C /* buffer.c in Sources */,
+				D4CDD5573F110B289860F47F /* bufwrite.c in Sources */,
+				11FE24B543835CA572620004 /* change.c in Sources */,
+				77D09D2BAF2C0CBC75319FDD /* charset.c in Sources */,
+				D96F25FEDA05BCEB51C5BE6C /* cindent.c in Sources */,
+				B3DA8A1B61055A76C8546AFF /* clientserver.c in Sources */,
+				0B7AA858E0FC989FB459331E /* clipboard.c in Sources */,
+				7FC429CF8A722F50F106A6B3 /* cmdexpand.c in Sources */,
+				5A18AE6150FE2FB3F0DAEDED /* cmdhist.c in Sources */,
+				6285757DC2688E1ADFB86A2C /* crypt.c in Sources */,
+				D837D41C2F4B4E5845743F41 /* crypt_zip.c in Sources */,
+				B34D581DE9F46A39F9A72641 /* debugger.c in Sources */,
+				770DF2CDDFBB601624C9E754 /* dict.c in Sources */,
+				C2ABD31C053ED4AFA58E35FB /* diff.c in Sources */,
+				3017CEDCC1C1FA4E53F1FB7F /* digraph.c in Sources */,
+				B7302993E3375FAF8F78871A /* drawline.c in Sources */,
+				FDC167903316FADF56D5C138 /* drawscreen.c in Sources */,
+				BBA3671A6222EE75EB850904 /* edit.c in Sources */,
+				0621AA6683D152C39FD3721C /* eval.c in Sources */,
+				9EA9D191A9A71825CBBC1832 /* evalbuffer.c in Sources */,
+				F47B20CB2569D2E8BBE0F91A /* evalfunc.c in Sources */,
+				0CD00B117B6D9AF0B74B1F2F /* evalvars.c in Sources */,
+				D672013E8965D78E0AD0584F /* evalwindow.c in Sources */,
+				DD8AD410598CF05BBB254D14 /* ex_cmds.c in Sources */,
+				F7EB6B0668B85916665D52A1 /* ex_cmds2.c in Sources */,
+				B46E3561FF1D88EB9F9054BC /* ex_docmd.c in Sources */,
+				2C1423C837D50D84E45CEA54 /* ex_eval.c in Sources */,
+				3EF20532D3D78509A1A2220A /* ex_getln.c in Sources */,
+				B94B4483482D412D6D94BA76 /* fileio.c in Sources */,
+				0185DF388C5136ECA5B0D8AC /* filepath.c in Sources */,
+				D40839E5FF88DA4448B4AC50 /* findfile.c in Sources */,
+				CA3D134D406963E8486D4265 /* float.c in Sources */,
+				3A62F3FCAF3965171EC7C4B7 /* fold.c in Sources */,
+				1B121744DD3537C81E0E2436 /* fuzzy.c in Sources */,
+				0AE6EADE78986111ED0C3933 /* gc.c in Sources */,
+				AAE90AC015639A8DF58FB0E5 /* getchar.c in Sources */,
+				FEFE853C0C8E0D1FF872B861 /* hardcopy.c in Sources */,
+				A3085F4BAE00B604D5AE5C61 /* hashtab.c in Sources */,
+				AAC532324833B270C67B62DB /* help.c in Sources */,
+				6791A69194832DA5F1EA0AC3 /* highlight.c in Sources */,
+				F1711489FED49234FF53F1A7 /* indent.c in Sources */,
+				43CC741FCD42AFDC1C95E058 /* insexpand.c in Sources */,
+				EF509233C44BF06F27EED9E6 /* ios_vim.m in Sources */,
+				C296E259723AABEF0808B576 /* json.c in Sources */,
+				B2F099B95059BDE942B47BDB /* linematch.c in Sources */,
+				56321E1A6384918F2FFA6AE1 /* list.c in Sources */,
+				F9FE0F67AB860B573A62365B /* locale.c in Sources */,
+				284CE9B8487207C5F9CAE0CE /* logfile.c in Sources */,
+				D64387D29485F5D56AC8F939 /* main.c in Sources */,
+				7480E324E3CCCA7A374830E0 /* map.c in Sources */,
+				613AECB809710AB807AF431A /* mark.c in Sources */,
+				DCC0F384477DC6688B7170FA /* match.c in Sources */,
+				8DC736CA0835B1ABA048F8B9 /* mbyte.c in Sources */,
+				D84455FEEA7D97F0EE36D8F7 /* memfile.c in Sources */,
+				239BA8A80B06DC7055A1B473 /* memline.c in Sources */,
+				317B870EF15064774E618161 /* menu.c in Sources */,
+				198FDF56CC0DB553FEDEB61F /* message.c in Sources */,
+				0D753DF7AD5F10C6CE4A732F /* misc1.c in Sources */,
+				0539B5E65C0249FB7026FF39 /* misc2.c in Sources */,
+				D961B9A1119496D16679659A /* mouse.c in Sources */,
+				00D07C71BDE1A7BDBDFB070C /* move.c in Sources */,
+				7B5D67154B6BB952016C3F64 /* normal.c in Sources */,
+				F19C03D9E2C2DA32E36E85BA /* ops.c in Sources */,
+				DAAD2EC5D994465A261DB8F5 /* option.c in Sources */,
+				601E9EDD29261313AE277C7C /* optionstr.c in Sources */,
+				A99D0586BFDD0EFA9F4548A1 /* os_unix.c in Sources */,
+				E17ADFC909AF162410524293 /* popupmenu.c in Sources */,
+				B737D740987D3BA128FCE160 /* popupwin.c in Sources */,
+				AD31CD7C70916B9B448A8680 /* profiler.c in Sources */,
+				2653258272FBE70B2342C0CA /* quickfix.c in Sources */,
+				4F3978A9312358CB8EA6BE6E /* regexp.c in Sources */,
+				A6655306EBD2AE2D66438086 /* register.c in Sources */,
+				826F4CDF7BAADEB0935346A4 /* screen.c in Sources */,
+				6A13AAF22CAD2B20D2237936 /* scriptfile.c in Sources */,
+				933D3DC7C36B445A13A7BBB7 /* search.c in Sources */,
+				12D373D18748950D6B293BC4 /* session.c in Sources */,
+				36AD64079CAD79EAB2CAB9A0 /* sha256.c in Sources */,
+				CB541B32D8781216F974002D /* sign.c in Sources */,
+				EEDDB253A0EEDECA1904568A /* sound.c in Sources */,
+				60A92FAC2C4C4EB6FC2C3D29 /* spell.c in Sources */,
+				7A78C94B3760A69D26A8C677 /* spellfile.c in Sources */,
+				5D012381519790E2720DD803 /* spellsuggest.c in Sources */,
+				C8E2EAD00628440F655B5040 /* strings.c in Sources */,
+				C122C5984D2E7FEABB9C59FE /* syntax.c in Sources */,
+				791FD150775934A615845872 /* tabpanel.c in Sources */,
+				D2021D1815C551B5B45C551C /* tag.c in Sources */,
+				4A7CBC767436F13C782745B7 /* term.c in Sources */,
+				73CB1D27E3E8DB8F28DF2F31 /* testing.c in Sources */,
+				5375766A03DA467ACC5E3A97 /* textformat.c in Sources */,
+				2DF6B1F3017AF60504F31B95 /* textobject.c in Sources */,
+				6046CDD2B4192D9C30BBFCA9 /* textprop.c in Sources */,
+				81A783945518E9A3914AE2E5 /* time.c in Sources */,
+				88E0A06061D8DCD103CF8533 /* tuple.c in Sources */,
+				86370AA6D56BCB073E29BB22 /* typval.c in Sources */,
+				CF2D0323650F9FEFCBEDD7B0 /* ui.c in Sources */,
+				D967E69F689DEBCF0F86AF9B /* undo.c in Sources */,
+				39F25BB999D6FA009765C9F1 /* usercmd.c in Sources */,
+				058BB2B0586C4F507F4F2725 /* userfunc.c in Sources */,
+				9EAB0A2F9F8A65D66C6102A7 /* version.c in Sources */,
+				35ECA8CE158BAADC68F4EAC4 /* vim9class.c in Sources */,
+				5EF9223347AFB1ABB64F579C /* vim9cmds.c in Sources */,
+				7E380900CE5D4EFCB55ADBAF /* vim9compile.c in Sources */,
+				0C9004BFCA863498F480AE6E /* vim9execute.c in Sources */,
+				7C66FAB2C9B0D51459705B03 /* vim9expr.c in Sources */,
+				6B30EBEDFE5F61182CDBFA3B /* vim9generics.c in Sources */,
+				F41C8D501C8D84187E0C3422 /* vim9instr.c in Sources */,
+				4F6BCCBAEB10AA3CDE8FA490 /* vim9script.c in Sources */,
+				374FE22FC508EE47F3FD4176 /* vim9type.c in Sources */,
+				786AE42149C194887B19A599 /* viminfo.c in Sources */,
+				20CFC8CA9E69F9BA30A448E3 /* window.c in Sources */,
+				E0807E1ADBE179B8056C6DD0 /* xdiffi.c in Sources */,
+				8E89D9A49D7F34BA1569F779 /* xemit.c in Sources */,
+				D5C059490EA0B7FCF8D4C5FB /* xhistogram.c in Sources */,
+				44D3472C50E6930992913ED1 /* xpatience.c in Sources */,
+				EF1A246C9692EA31105E1CCF /* xprepare.c in Sources */,
+				95C976A4E563677804F6068F /* xutils.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		F2828D20CCF8A3212FF05867 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = ios_system;
+			target = 223496AA1FD5FC71007ED1A9 /* ios_system */;
+			targetProxy = EBE87B8CC61766A13BD797CD /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		223496B11FD5FC71007ED1A9 /* Debug */ = {
@@ -5068,14 +5506,6 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/Frameworks",
 				);
-				HEADER_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/../libssh2-for-iOS/libssl.xcframework/ios-arm64/Headers",
-					"$(PROJECT_DIR)/../libssh2-for-iOS/libssl.xcframework/ios-arm64-simulator/Headers",
-					"$(PROJECT_DIR)/../libssh2-for-iOS/libssl.xcframework/ios-arm64_x86_64-maccatalyst/Headers",
-					"$(PROJECT_DIR)/../libssh2-for-iOS/libssl.xcframework/xros-arm64/Headers",
-					"$(PROJECT_DIR)/../libssh2-for-iOS/libssl.xcframework/xros-arm64-simulator/Headers",
-				);
 				INFOPLIST_FILE = "ssh_cmd copy2-Info.plist";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
@@ -5124,14 +5554,6 @@
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/Frameworks",
-				);
-				HEADER_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/../libssh2-for-iOS/libssl.xcframework/ios-arm64/Headers",
-					"$(PROJECT_DIR)/../libssh2-for-iOS/libssl.xcframework/ios-arm64-simulator/Headers",
-					"$(PROJECT_DIR)/../libssh2-for-iOS/libssl.xcframework/ios-arm64_x86_64-maccatalyst/Headers",
-					"$(PROJECT_DIR)/../libssh2-for-iOS/libssl.xcframework/xros-arm64/Headers",
-					"$(PROJECT_DIR)/../libssh2-for-iOS/libssl.xcframework/xros-arm64-simulator/Headers",
 				);
 				INFOPLIST_FILE = "ssh_cmd copy2-Info.plist";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
@@ -5604,24 +6026,6 @@
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/Frameworks",
-					"$(PROJECT_DIR)/../libssh2-for-iOS",
-				);
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					"$(inherited)",
-					"OPENSSL_API_COMPAT=0x10100000L",
-				);
-				HEADER_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/../libssh2-for-iOS/libssl.xcframework/ios-arm64/Headers",
-					"$(PROJECT_DIR)/../libssh2-for-iOS/libssl.xcframework/ios-arm64-simulator/Headers",
-					"$(PROJECT_DIR)/../libssh2-for-iOS/libssl.xcframework/ios-arm64_x86_64-maccatalyst/Headers",
-					"$(PROJECT_DIR)/../libssh2-for-iOS/libssl.xcframework/xros-arm64/Headers",
-					"$(PROJECT_DIR)/../libssh2-for-iOS/libssl.xcframework/xros-arm64-simulator/Headers",
-					"$(PROJECT_DIR)/../libssh2-for-iOS/libcrypto.xcframework/ios-arm64/Headers",
-					"$(PROJECT_DIR)/../libssh2-for-iOS/libcrypto.xcframework/ios-arm64-simulator/Headers",
-					"$(PROJECT_DIR)/../libssh2-for-iOS/libcrypto.xcframework/ios-arm64_x86_64-maccatalyst/Headers",
-					"$(PROJECT_DIR)/../libssh2-for-iOS/libcrypto.xcframework/xros-arm64/Headers",
-					"$(PROJECT_DIR)/../libssh2-for-iOS/libcrypto.xcframework/xros-arm64-simulator/Headers",
 				);
 				INFOPLIST_FILE = ssh_cmd/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
@@ -5670,24 +6074,6 @@
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/Frameworks",
-					"$(PROJECT_DIR)/../libssh2-for-iOS",
-				);
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					"$(inherited)",
-					"OPENSSL_API_COMPAT=0x10100000L",
-				);
-				HEADER_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/../libssh2-for-iOS/libssl.xcframework/ios-arm64/Headers",
-					"$(PROJECT_DIR)/../libssh2-for-iOS/libssl.xcframework/ios-arm64-simulator/Headers",
-					"$(PROJECT_DIR)/../libssh2-for-iOS/libssl.xcframework/ios-arm64_x86_64-maccatalyst/Headers",
-					"$(PROJECT_DIR)/../libssh2-for-iOS/libssl.xcframework/xros-arm64/Headers",
-					"$(PROJECT_DIR)/../libssh2-for-iOS/libssl.xcframework/xros-arm64-simulator/Headers",
-					"$(PROJECT_DIR)/../libssh2-for-iOS/libcrypto.xcframework/ios-arm64/Headers",
-					"$(PROJECT_DIR)/../libssh2-for-iOS/libcrypto.xcframework/ios-arm64-simulator/Headers",
-					"$(PROJECT_DIR)/../libssh2-for-iOS/libcrypto.xcframework/ios-arm64_x86_64-maccatalyst/Headers",
-					"$(PROJECT_DIR)/../libssh2-for-iOS/libcrypto.xcframework/xros-arm64/Headers",
-					"$(PROJECT_DIR)/../libssh2-for-iOS/libcrypto.xcframework/xros-arm64-simulator/Headers",
 				);
 				INFOPLIST_FILE = ssh_cmd/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
@@ -5830,21 +6216,28 @@
 			};
 			name = Release;
 		};
-		47076C8D2EE0D7BE0012B882 /* Debug */ = {
+		2BB5737FFE2BEDD9AD04317D /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CLANG_ENABLE_OBJC_WEAK = YES;
-				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
-				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_IDENTITY = "";
-				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
 				DEFINES_MODULE = YES;
-				DEVELOPMENT_TEAM = VG8Z23C8YL;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
-				HEADER_SEARCH_PATHS = "";
-				INFOPLIST_FILE = joe_framework/Info.plist;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"HAVE_CONFIG_H=1",
+					"FEAT_NORMAL=1",
+					"IOS_SYSTEM=1",
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/vim/src",
+					"$(SRCROOT)/ios_system",
+					"$(SRCROOT)/vim/src/proto",
+					"$(SRCROOT)",
+				);
+				INFOPLIST_FILE = vim_framework/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -5852,74 +6245,72 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				ONLY_ACTIVE_ARCH = NO;
+				MARKETING_VERSION = 9.1;
 				OTHER_CFLAGS = (
-					"-Wshorten-64-to-32",
-					"-Wno-ambiguous-macro",
-					"-Wunused-const-variable",
-					"-Wincompatible-pointer-types-discards-qualifiers",
-					"-I",
-					ios_system/,
+					"-Wno-shorten-64-to-32",
+					"-Wno-implicit-function-declaration",
+					"-Wno-incompatible-pointer-types",
 				);
-				OTHER_LDFLAGS = (
-					"-Xlinker",
-					"-no_fixup_chains",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = "Nicolas-Holzschuch.joe";
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.holzschu.vim;
+				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator xros xrsimulator";
+				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos xros xrsimulator macosx";
 				SUPPORTS_MACCATALYST = YES;
-				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
-				TARGETED_DEVICE_FAMILY = "1,2,7";
-				USER_HEADER_SEARCH_PATHS = "\"$(PROJECT_DIR)/joe/joe $(PROJECT_DIR)/ios_system\"";
-			};
-			name = Debug;
-		};
-		47076C8E2EE0D7BE0012B882 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CLANG_ENABLE_OBJC_WEAK = YES;
-				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
-				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
-				CODE_SIGN_IDENTITY = "";
-				CODE_SIGN_STYLE = Automatic;
-				DEFINES_MODULE = YES;
-				DEVELOPMENT_TEAM = VG8Z23C8YL;
-				DYLIB_COMPATIBILITY_VERSION = 1;
-				DYLIB_CURRENT_VERSION = 1;
-				DYLIB_INSTALL_NAME_BASE = "@rpath";
-				HEADER_SEARCH_PATHS = "";
-				INFOPLIST_FILE = joe_framework/Info.plist;
-				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@loader_path/Frameworks",
-				);
-				OTHER_CFLAGS = (
-					"-Wshorten-64-to-32",
-					"-Wno-ambiguous-macro",
-					"-Wunused-const-variable",
-					"-Wincompatible-pointer-types-discards-qualifiers",
-					"-I",
-					ios_system/,
-				);
-				OTHER_LDFLAGS = (
-					"-Xlinker",
-					"-no_fixup_chains",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = "Nicolas-Holzschuch.joe";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator xros xrsimulator";
-				SUPPORTS_MACCATALYST = YES;
-				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
-				TARGETED_DEVICE_FAMILY = "1,2,7";
-				USER_HEADER_SEARCH_PATHS = "\"$(PROJECT_DIR)/joe/joe $(PROJECT_DIR)/ios_system\"";
+				TARGETED_DEVICE_FAMILY = "1,2,6,7";
+				VALIDATE_PRODUCT = YES;
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
 			};
 			name = Release;
+		};
+		6E2614BE67972F31C5656656 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_IDENTITY = "";
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"HAVE_CONFIG_H=1",
+					"FEAT_NORMAL=1",
+					"IOS_SYSTEM=1",
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/vim/src",
+					"$(SRCROOT)/ios_system",
+					"$(SRCROOT)/vim/src/proto",
+					"$(SRCROOT)",
+				);
+				INFOPLIST_FILE = vim_framework/Info.plist;
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 9.1;
+				OTHER_CFLAGS = (
+					"-Wno-shorten-64-to-32",
+					"-Wno-implicit-function-declaration",
+					"-Wno-incompatible-pointer-types",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.holzschu.vim;
+				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos xros xrsimulator macosx";
+				SUPPORTS_MACCATALYST = YES;
+				TARGETED_DEVICE_FAMILY = "1,2,6,7";
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
+			};
+			name = Debug;
 		};
 /* End XCBuildConfiguration section */
 
@@ -6032,11 +6423,11 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		47076C8C2EE0D7BE0012B882 /* Build configuration list for PBXNativeTarget "joe" */ = {
+		294D4608F0A89F89D556C468 /* Build configuration list for PBXNativeTarget "vim" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				47076C8D2EE0D7BE0012B882 /* Debug */,
-				47076C8E2EE0D7BE0012B882 /* Release */,
+				2BB5737FFE2BEDD9AD04317D /* Release */,
+				6E2614BE67972F31C5656656 /* Debug */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

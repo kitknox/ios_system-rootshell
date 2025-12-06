@@ -25,6 +25,7 @@ let allSchemes = [
     "sshd",
     "tar",
     "text",
+    "vim",
     ]
 
 let args = ProcessInfo.processInfo.arguments
