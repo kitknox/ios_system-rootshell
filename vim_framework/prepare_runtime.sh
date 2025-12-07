@@ -57,6 +57,12 @@ done
 echo "Copying plugin files..."
 cp -R "${RUNTIME_SRC}/plugin" "${BUNDLE_DIR}/" 2>/dev/null || true
 
+# Optional: pack directory for packaged plugins (netrw, etc.)
+echo "Copying pack directory..."
+if [ -d "${RUNTIME_SRC}/pack" ]; then
+    cp -R "${RUNTIME_SRC}/pack" "${BUNDLE_DIR}/"
+fi
+
 # Create Info.plist for the bundle
 cat > "${BUNDLE_DIR}/Info.plist" << 'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
