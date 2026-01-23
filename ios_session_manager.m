@@ -493,7 +493,7 @@ void ios_session_cleanup_params(sessionParameters* sp) {
     if (sp->stderr != NULL && sp->stderr != stderr) {
         fclose(sp->stderr);
     }
-    if (sp->tty != NULL) {
+    if (sp->tty != NULL && sp->tty != stdin) {
         fclose(sp->tty);
     }
 }
