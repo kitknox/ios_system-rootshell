@@ -75,6 +75,11 @@ ios_async_options_t ios_async_default_options(void) {
 static void* command_thread_func(void* arg) {
     ios_command_t* cmd = (ios_command_t*)arg;
 
+    // Increment ref count to prevent early free while thread is still running.
+    // The caller may call ios_command_release() after ios_command_wait() returns,
+    // but we're still executing (about to call invoke_callback_if_set).
+    atomic_fetch_add(&cmd->ref_count, 1);
+
     // Update status to running
     atomic_store(&cmd->status, IOS_CMD_RUNNING);
 
@@ -118,6 +123,10 @@ static void* command_thread_func(void* arg) {
 
     // Invoke callback if set
     invoke_callback_if_set(cmd, result);
+
+    // Release the reference we took at the start of this function.
+    // This ensures cmd stays valid until we're completely done.
+    ios_command_release(cmd);
 
     return NULL;
 }
