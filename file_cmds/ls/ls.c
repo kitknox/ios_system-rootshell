@@ -838,6 +838,11 @@ display(FTSENT *p, FTSENT *list)
 				} else {
 					user = user_from_uid(sp->st_uid, 0);
 					group = group_from_gid(sp->st_gid, 0);
+					const char *custom_name = getenv("ROOTSHELL_USERNAME");
+					if (custom_name && *custom_name) {
+						if (sp->st_uid == getuid()) user = custom_name;
+						if (sp->st_gid == getgid()) group = custom_name;
+					}
 				}
 				if ((ulen = strlen(user)) > maxuser)
 					maxuser = ulen;
