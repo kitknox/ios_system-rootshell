@@ -9,18 +9,13 @@ _ = Package(
     ],
     
     targets: [
-        // ssh2:
-        .binaryTarget(
-            name: "libssh2",
-            path: "../../libssh2-for-iOS/libssh2.xcframework"
-        ),
         .binaryTarget(
             name: "openssl",
-            path: "../../libssh2-for-iOS/libssl.xcframework"
+            path: "../../openssl_ios/.build/libssl.xcframework"
         ),
         .binaryTarget(
             name: "libcrypto",
-            path: "../../libssh2-for-iOS/libcrypto.xcframework"
+            path: "../../openssl_ios/.build/libcrypto.xcframework"
         ),
         .target(
             name: "build",
