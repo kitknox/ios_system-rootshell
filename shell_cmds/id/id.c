@@ -196,9 +196,15 @@ id_main(int argc, char *argv[])
 
 	if (uflag) {
 		id = pw ? pw->pw_uid : rflag ? getuid() : geteuid();
-		if (nflag && (pw = getpwuid(id)))
-			(void)fprintf(thread_stdout, "%s\n", pw->pw_name);
-		else
+		if (nflag && (pw = getpwuid(id))) {
+			const char *name = pw->pw_name;
+			if (iswhoami) {
+				const char *custom_name = getenv("ROOTSHELL_USERNAME");
+				if (custom_name && *custom_name && (uid_t)id == geteuid())
+					name = custom_name;
+			}
+			(void)fprintf(thread_stdout, "%s\n", name);
+		} else
 			(void)fprintf(thread_stdout, "%u\n", id);
 		exit(0);
 	}
