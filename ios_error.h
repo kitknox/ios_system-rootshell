@@ -44,6 +44,9 @@ extern "C" {
   #define select ios_select
   #define pselect ios_pselect
   #define poll ios_poll
+  #define sleep ios_sleep
+  #define usleep ios_usleep
+  #define nanosleep ios_nanosleep
   #define fwrite ios_fwrite
   #define fread ios_fread
   #define fgetc ios_fgetc
@@ -125,6 +128,9 @@ extern ssize_t ios_read(int fildes, void *buf, size_t nbyte);
 extern int ios_select(int nfds, fd_set *restrict readfds, fd_set *restrict writefds, fd_set *restrict errorfds, struct timeval *restrict timeout);
 extern int ios_pselect(int nfds, fd_set *restrict readfds, fd_set *restrict writefds, fd_set *restrict errorfds, const struct timespec *restrict timeout, const sigset_t *restrict sigmask);
 extern int ios_poll(struct pollfd fds[], nfds_t nfds, int timeout);
+extern unsigned int ios_sleep(unsigned int seconds);
+extern int ios_usleep(useconds_t usec);
+extern int ios_nanosleep(const struct timespec *rqtp, struct timespec *rmtp);
 extern size_t ios_fwrite(const void *ptr, size_t size, size_t nitems, FILE *stream);
 extern size_t ios_fread(void *ptr, size_t size, size_t nitems, FILE *stream);
 extern int ios_fgetc(FILE *stream);

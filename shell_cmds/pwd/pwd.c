@@ -97,7 +97,7 @@ pwd_main(int argc, char *argv[])
         if (physical) {
             fprintf(thread_stdout, "%s\n", p);
         } else {
-            fprintf(thread_stdout, ios_getBookmarkedVersion(p));
+            fprintf(thread_stdout, "%s", ios_getBookmarkedVersion(p));
             fprintf(thread_stdout, "\n");
         }
     } else {

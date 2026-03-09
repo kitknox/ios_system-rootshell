@@ -27,6 +27,9 @@
 #undef select
 #undef pselect
 #undef poll
+#undef sleep
+#undef usleep
+#undef nanosleep
 #undef fwrite
 #undef fread
 #undef fgetc
@@ -78,6 +81,101 @@ static void executeWebAssemblyCommandsInOrder(void) {
     orderOfWebAssemblyCommands = 0;
 }
 
+static int ios_wait_for_cancel_or_timeout_ms(int timeout_ms) {
+    if (ios_sessionCancelRequested()) {
+        errno = EINTR;
+        return -1;
+    }
+
+    int cancel_fd = ios_sessionCancelFD();
+    if (cancel_fd < 0) {
+        return poll(NULL, 0, timeout_ms);
+    }
+
+    struct pollfd cancel_pollfd;
+    cancel_pollfd.fd = cancel_fd;
+    cancel_pollfd.events = POLLIN | POLLERR | POLLHUP;
+    cancel_pollfd.revents = 0;
+
+    int result = poll(&cancel_pollfd, 1, timeout_ms);
+    if (result <= 0) {
+        return result;
+    }
+
+    errno = EINTR;
+    return -1;
+}
+
+static struct timespec ios_timespec_subtract(struct timespec lhs, struct timespec rhs) {
+    lhs.tv_sec -= rhs.tv_sec;
+    lhs.tv_nsec -= rhs.tv_nsec;
+    if (lhs.tv_nsec < 0) {
+        lhs.tv_sec -= 1;
+        lhs.tv_nsec += 1000000000L;
+    }
+    if (lhs.tv_sec < 0) {
+        lhs.tv_sec = 0;
+        lhs.tv_nsec = 0;
+    }
+    return lhs;
+}
+
+static int ios_timespec_is_zero(struct timespec value) {
+    return value.tv_sec == 0 && value.tv_nsec == 0;
+}
+
+static int ios_nanosleep_internal(const struct timespec *rqtp, struct timespec *rmtp) {
+    if (rqtp == NULL || rqtp->tv_sec < 0 || rqtp->tv_nsec < 0 || rqtp->tv_nsec >= 1000000000L) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    struct timespec remaining = *rqtp;
+    while (!ios_timespec_is_zero(remaining)) {
+        struct timespec before;
+        struct timespec after;
+        int timeout_ms;
+
+        if (clock_gettime(CLOCK_MONOTONIC, &before) != 0) {
+            if (rmtp != NULL) {
+                *rmtp = remaining;
+            }
+            return -1;
+        }
+
+        if (remaining.tv_sec > (INT_MAX / 1000)) {
+            timeout_ms = INT_MAX;
+        } else {
+            long long timeout_ms_ll = (long long)remaining.tv_sec * 1000LL +
+                (long long)((remaining.tv_nsec + 999999L) / 1000000L);
+            timeout_ms = (timeout_ms_ll <= 0) ? 1 : (int)timeout_ms_ll;
+        }
+
+        if (ios_wait_for_cancel_or_timeout_ms(timeout_ms) < 0) {
+            if (clock_gettime(CLOCK_MONOTONIC, &after) == 0) {
+                remaining = ios_timespec_subtract(remaining, ios_timespec_subtract(after, before));
+            }
+            if (rmtp != NULL) {
+                *rmtp = remaining;
+            }
+            return -1;
+        }
+
+        if (clock_gettime(CLOCK_MONOTONIC, &after) != 0) {
+            remaining.tv_sec = 0;
+            remaining.tv_nsec = 0;
+            break;
+        }
+        remaining = ios_timespec_subtract(remaining, ios_timespec_subtract(after, before));
+    }
+
+    if (rmtp != NULL) {
+        rmtp->tv_sec = 0;
+        rmtp->tv_nsec = 0;
+    }
+    return 0;
+}
+
 static int ios_wait_for_fd_or_cancel(int fd, short events, int timeout_ms) {
     if (fd < 0) {
         errno = EBADF;
@@ -122,6 +220,30 @@ static int ios_wait_for_fd_or_cancel(int fd, short events, int timeout_ms) {
         }
         return 0;
     }
+}
+
+unsigned int ios_sleep(unsigned int seconds) {
+    struct timespec request;
+    struct timespec remaining;
+
+    request.tv_sec = seconds;
+    request.tv_nsec = 0;
+    if (ios_nanosleep_internal(&request, &remaining) == 0) {
+        return 0;
+    }
+    return (unsigned int)(remaining.tv_sec + (remaining.tv_nsec != 0 ? 1 : 0));
+}
+
+int ios_usleep(useconds_t usec) {
+    struct timespec request;
+
+    request.tv_sec = usec / 1000000U;
+    request.tv_nsec = (long)(usec % 1000000U) * 1000L;
+    return ios_nanosleep_internal(&request, NULL);
+}
+
+int ios_nanosleep(const struct timespec *rqtp, struct timespec *rmtp) {
+    return ios_nanosleep_internal(rqtp, rmtp);
 }
 
 // Darwin/BSD stdio exposes buffered byte count and buffer pointer in FILE.

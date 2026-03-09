@@ -424,6 +424,8 @@ w_main(int argc, char *argv[])
 		if ((local_error = sysctl(mib, 4, kp, &bufSize, NULL, 0)) < 0) {
 			if (retry_count < 1000) {
 				sleep(1);
+				if (ios_sessionCancelRequested())
+					exit(130);
 				continue;
 			}
 			perror("Failure calling sysctl");
@@ -432,6 +434,8 @@ w_main(int argc, char *argv[])
 			break;
 		}
 		sleep(1);
+		if (ios_sessionCancelRequested())
+			exit(130);
 	}
 	nentries = bufSize / sizeof(struct kinfo_proc);
 #endif /* !HAVE_KVM */

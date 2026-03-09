@@ -54,6 +54,7 @@ static const char sccsid[] = "@(#)forward.c	8.1 (Berkeley) 6/6/93";
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
+#include <poll.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -63,8 +64,10 @@ static const char sccsid[] = "@(#)forward.c	8.1 (Berkeley) 6/6/93";
 #include "ios_error.h"
 
 static void rlines(FILE *, off_t, struct stat *);
-static void show(file_info_t *);
+static int show(file_info_t *);
 static void set_events(file_info_t *files);
+static int tail_cancel_requested(void);
+static int wait_for_follow_event(int *);
 
 /* defines for inner loop actions */
 #define USE_SLEEP	0
@@ -76,6 +79,17 @@ int action = USE_SLEEP;
 int kq;
 
 static const file_info_t *last;
+
+static int
+tail_cancel_requested(void)
+{
+	if (!ios_sessionCancelRequested())
+		return 0;
+
+	errno = EINTR;
+	rval = 130;
+	return 1;
+}
 
 /*
  * forward -- display the file, from an offset, forward.
@@ -182,6 +196,10 @@ forward(FILE *fp, enum STYLE style, off_t off, struct stat *sbp)
 	while ((ch = getc(fp)) != EOF)
 		if (putchar(ch) == EOF)
 			oerr();
+	if (tail_cancel_requested()) {
+		clearerr(fp);
+		return;
+	}
 	if (ferror(fp)) {
 		ierr();
 		return;
@@ -362,12 +380,12 @@ done:
 #endif
 }
 
-static void
+static int
 show(file_info_t *file)
 {
     int ch;
 
-    while ((ch = getc(file->fp)) != EOF) {
+    while (!tail_cancel_requested() && (ch = getc(file->fp)) != EOF) {
 	if (last != file && no_files > 1) {
 		if (!tail_qflag)
 			(void)printf("\n==> %s <==\n", file->file_name);
@@ -377,6 +395,10 @@ show(file_info_t *file)
 		oerr();
     }
     (void)fflush(stdout);
+    if (tail_cancel_requested()) {
+	    clearerr(file->fp);
+	    return (1);
+    }
     if (ferror(file->fp)) {
 	    file->fp = NULL;
 	    tail_fname = file->file_name;
@@ -384,6 +406,7 @@ show(file_info_t *file)
 	    tail_fname = NULL;
     } else
 	    clearerr(file->fp);
+    return (0);
 }
 
 static void
@@ -424,6 +447,54 @@ set_events(file_info_t *files)
 	}
 }
 
+static int
+wait_for_follow_event(int *n)
+{
+	int wait_result;
+	struct pollfd pfd;
+	struct timespec ts;
+
+	switch (action) {
+	case USE_KQUEUE:
+		pfd.fd = kq;
+		pfd.events = POLLIN;
+		pfd.revents = 0;
+		wait_result = poll(&pfd, 1, Fflag ? 1000 : -1);
+		if (wait_result < 0) {
+			if (tail_cancel_requested())
+				return (1);
+			err(1, "poll");
+		}
+		if (wait_result == 0) {
+			*n = 0;
+			return (0);
+		}
+
+		ts.tv_sec = 0;
+		ts.tv_nsec = 0;
+		*n = kevent(kq, NULL, 0, ev, 1, &ts);
+		if (*n < 0) {
+			if (tail_cancel_requested())
+				return (1);
+			err(1, "kevent");
+		}
+		return (0);
+
+	case USE_SLEEP:
+		wait_result = poll(NULL, 0, 250);
+		if (wait_result < 0) {
+			if (tail_cancel_requested())
+				return (1);
+			err(1, "poll");
+		}
+		*n = 0;
+		return (0);
+	}
+
+	*n = 0;
+	return (0);
+}
+
 /*
  * follow -- display the file, from an offset, forward.
  *
@@ -434,7 +505,6 @@ follow(file_info_t *files, enum STYLE style, off_t off)
 	int active, i, n = -1;
 	struct stat sb2;
 	file_info_t *file;
-	struct timespec ts;
 
 	/* Position each of the files */
 
@@ -468,6 +538,8 @@ follow(file_info_t *files, enum STYLE style, off_t off)
 	set_events(files);
 
 	for (;;) {
+		if (tail_cancel_requested())
+			break;
 		for (i = 0, file = files; i < no_files; i++, file++) {
 			if (! file->fp)
 				continue;
@@ -476,7 +548,8 @@ follow(file_info_t *files, enum STYLE style, off_t off)
 				    (sb2.st_ino != file->st.st_ino ||
 				     sb2.st_dev != file->st.st_dev ||
 				     sb2.st_nlink == 0)) {
-					show(file);
+					if (show(file))
+						goto done;
 					file->fp = freopen(file->file_name, "r", file->fp);
 					if (file->fp == NULL) {
 						ierr();
@@ -487,35 +560,29 @@ follow(file_info_t *files, enum STYLE style, off_t off)
 					}
 				}
 			}
-			show(file);
+			if (show(file))
+				goto done;
 		}
 
-		switch (action) {
-		case USE_KQUEUE:
-			ts.tv_sec = 1;
-			ts.tv_nsec = 0;
-			/*
-			 * In the -F case we set a timeout to ensure that
-			 * we re-stat the file at least once every second.
-			 */
-			n = kevent(kq, NULL, 0, ev, 1, Fflag ? &ts : NULL);
-			if (n < 0)
-				err(1, "kevent");
-			if (n == 0) {
-				/* timeout */
-				break;
-			} else if (ev->filter == EVFILT_READ && ev->data < 0) {
-				 /* file shrank, reposition to end */
-				if (lseek(ev->ident, (off_t)0, SEEK_END) == -1) {
-					ierr();
-					continue;
-				}
+		if (wait_for_follow_event(&n))
+			break;
+		if (n == 0) {
+			/* timeout */
+			continue;
+		} else if (ev->filter == EVFILT_READ && ev->data < 0) {
+			 /* file shrank, reposition to end */
+			if (lseek(ev->ident, (off_t)0, SEEK_END) == -1) {
+				ierr();
+				continue;
 			}
-			break;
-
-		case USE_SLEEP:
-			(void) usleep(250000);
-			break;
 		}
+	}
+
+done:
+	free(ev);
+	ev = NULL;
+	if (kq >= 0) {
+		close(kq);
+		kq = -1;
 	}
 }

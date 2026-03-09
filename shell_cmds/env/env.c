@@ -136,8 +136,11 @@ env_main(int argc, char **argv)
 			for (parg = argv, argc = 0; *parg; parg++, argc++)
 				fprintf(thread_stderr, "#env    arg[%d]=\t'%s'\n",
 				    argc, *parg);
-			if (env_verbosity > 1)
+			if (env_verbosity > 1) {
 				sleep(1);
+				if (ios_sessionCancelRequested())
+					exit(130);
+			}
 		}
 #if !TARGET_OS_IPHONE
         execvp(*argv, argv);
@@ -228,5 +231,4 @@ int unsetenv_main(int argc, char** argv) {
     // for (int i = 1; i < argc; i++) unsetenv(argv[i]);
     return 0;
 }
-
 

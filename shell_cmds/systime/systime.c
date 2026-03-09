@@ -31,6 +31,7 @@
 #include <unistd.h>
 #include <libproc.h>
 #include <mach/mach_time.h>
+#include "ios_error.h"
 
 static void usage(void);
 static void do_print(void);
@@ -38,6 +39,7 @@ static void do_difftime(bool usepercent, uint64_t *olduser, uint64_t *oldsystem,
 static void do_piddifftime(bool userpercent, int pid, uint64_t *old_pid_user, uint64_t *old_pid_system, uint64_t *old_pid_time);
 static kern_return_t get_processor_time(uint64_t *user, uint64_t *sys, uint64_t *idle);
 static kern_return_t get_processor_count(int *ncpu);
+static void sleep_or_exit_on_cancel(int);
 static mach_timebase_info_data_t timebase_info;
 
 int
@@ -117,7 +119,7 @@ main(int argc, char *argv[])
 			} else {
 				do_difftime(usepercent, &olduser, &oldsystem, &oldidle);
 			}
-			sleep(sleep_time);
+			sleep_or_exit_on_cancel(sleep_time);
 		} while (recurring);
 
 		exit(0);
@@ -145,7 +147,7 @@ main(int argc, char *argv[])
 				do_piddifftime(usepercent, target_pid, &old_pid_user, &old_pid_system, &old_pid_time);
 			}
 
-			sleep(sleep_time);
+			sleep_or_exit_on_cancel(sleep_time);
 		} while (recurring);
 		exit(0);
 	}
@@ -207,7 +209,7 @@ main(int argc, char *argv[])
 
 		do_difftime(usepercent, &olduser, &oldsystem, &oldidle);
 
-		sleep(sleep_time);
+		sleep_or_exit_on_cancel(sleep_time);
 	} while (recurring);
 
 	exit (WIFEXITED(status) ? WEXITSTATUS(status) : EXIT_FAILURE);
@@ -223,6 +225,14 @@ usage(void)
 	                "       systime [-P] -u user -s sys -i idle\n"
 			"       systime [-P] [-r] [-t sleep_time] -T target_pid\n");
 	exit(1);
+}
+
+static void
+sleep_or_exit_on_cancel(int sleep_time)
+{
+	sleep(sleep_time);
+	if (ios_sessionCancelRequested())
+		exit(130);
 }
 
 static void

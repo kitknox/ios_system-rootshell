@@ -46,7 +46,9 @@ static char sccsid[] = "@(#)yes.c	8.1 (Berkeley) 6/6/93";
 __RCSID("$NetBSD: yes.c,v 1.5 1997/10/19 14:28:27 mrg Exp $");
 #endif /* not lint */
 
+#include <errno.h>
 #include <stdio.h>
+#include "ios_error.h"
 
 int main __P((int, char **));
 
@@ -55,9 +57,14 @@ main(argc, argv)
 	int argc;
 	char **argv;
 {
-	if (argc > 1)
-		for(;;)
-			(void)puts(argv[1]);
-	else for (;;)
-		(void)puts("y");
+	const char *line;
+
+	line = (argc > 1) ? argv[1] : "y";
+	for (;;) {
+		if (puts(line) == EOF) {
+			if (errno == EINTR && ios_sessionCancelRequested())
+				return (130);
+			return (1);
+		}
+	}
 }

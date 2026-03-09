@@ -42,6 +42,7 @@ static char sccsid[] = "@(#)sleep.c	8.3 (Berkeley) 4/2/94";
 __FBSDID("$FreeBSD: src/bin/sleep/sleep.c,v 1.20 2005/08/07 09:11:38 stefanf Exp $");
 
 #include <ctype.h>
+#include <errno.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -117,8 +118,11 @@ sleep_main(int argc, char *argv[])
 		} while (l);
 	}
 
-	if (!neg && (time_to_sleep.tv_sec > 0 || time_to_sleep.tv_nsec > 0))
-		(void)nanosleep(&time_to_sleep, (struct timespec *)NULL);
+	if (!neg && (time_to_sleep.tv_sec > 0 || time_to_sleep.tv_nsec > 0)) {
+		if (nanosleep(&time_to_sleep, (struct timespec *)NULL) != 0 &&
+		    errno == EINTR && ios_sessionCancelRequested())
+			return (130);
+	}
 
 	return(0);
 }

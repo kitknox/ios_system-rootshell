@@ -68,6 +68,7 @@ static const char sccsid[] = "@(#)script.c	8.1 (Berkeley) 6/6/93";
 #include <string.h>
 #include <termios.h>
 #include <unistd.h>
+#include "ios_error.h"
 
 #define DEF_BUF 65536
 
@@ -281,12 +282,20 @@ main(int argc, char *argv[])
 			tvp = NULL;
 		}
 		n = select(master + 1, &rfd, 0, 0, tvp);
-		if (n < 0 && errno != EINTR)
-			break;
+		if (n < 0) {
+			if (errno == EINTR && ios_sessionCancelRequested())
+				done(130);
+			if (errno != EINTR)
+				break;
+			continue;
+		}
 		if (n > 0 && FD_ISSET(STDIN_FILENO, &rfd)) {
 			cc = read(STDIN_FILENO, ibuf, BUFSIZ);
-			if (cc < 0)
+			if (cc < 0) {
+				if (errno == EINTR && ios_sessionCancelRequested())
+					done(130);
 				break;
+			}
 			if (cc == 0) {
 				if (tcgetattr(master, &stt) == 0 &&
 				    (stt.c_lflag & ICANON) != 0) {
@@ -306,9 +315,15 @@ main(int argc, char *argv[])
 		}
 		if (n > 0 && FD_ISSET(master, &rfd)) {
 			cc = read(master, obuf, sizeof (obuf));
+			if (cc < 0 && errno == EINTR && ios_sessionCancelRequested())
+				done(130);
 			if (cc <= 0)
 				break;
-			(void)write(STDOUT_FILENO, obuf, cc);
+			if (write(STDOUT_FILENO, obuf, cc) < 0) {
+				if (errno == EINTR && ios_sessionCancelRequested())
+					done(130);
+				break;
+			}
 			if (rawout)
 				record(fscript, obuf, cc, 'o');
 			else
@@ -525,15 +540,20 @@ playback(FILE *fp)
 				tsi.tv_sec -= 1;
 				tsi.tv_nsec += 1000000000;
 			}
-			if (usesleep)
-				(void)nanosleep(&tsi, NULL);
+			if (usesleep && nanosleep(&tsi, NULL) != 0 &&
+			    errno == EINTR && ios_sessionCancelRequested())
+				exit(130);
 			tsi = tso;
 			while (stamp.scr_len > 0) {
 				l = MIN(DEF_BUF, stamp.scr_len);
 				if (fread(buf, sizeof(char), l, fp) != l)
 					err(1, "cannot read buffer");
 
-				(void)write(STDOUT_FILENO, buf, l);
+				if (write(STDOUT_FILENO, buf, l) < 0) {
+					if (errno == EINTR && ios_sessionCancelRequested())
+						exit(130);
+					err(1, "stdout");
+				}
 				stamp.scr_len -= l;
 			}
 			break;
