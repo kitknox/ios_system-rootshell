@@ -128,6 +128,16 @@ struct name_cache {
 	} cache[name_cache_size];
 };
 
+static int
+cancel_requested(struct bsdtar *bsdtar)
+{
+	if (!ios_sessionCancelRequested())
+		return (0);
+	bsdtar->return_value = 130;
+	errno = EINTR;
+	return (1);
+}
+
 static void		 add_dir_list(struct bsdtar *bsdtar, const char *path,
 			     time_t mtime_sec, int mtime_nsec);
 static int		 append_archive(struct bsdtar *, struct archive *,
@@ -284,6 +294,8 @@ tar_mode_r(struct bsdtar *bsdtar)
 		    "Can't read archive %s: %s", bsdtar->filename,
 		    archive_error_string(a));
 	while (0 == archive_read_next_header(a, &entry)) {
+		if (cancel_requested(bsdtar))
+			break;
 		if (archive_compression(a) != ARCHIVE_COMPRESSION_NONE) {
 			archive_read_finish(a);
 			close(bsdtar->fd);
@@ -382,6 +394,8 @@ tar_mode_u(struct bsdtar *bsdtar)
 
 	/* Build a list of all entries and their recorded mod times. */
 	while (0 == archive_read_next_header(a, &entry)) {
+		if (cancel_requested(bsdtar))
+			break;
 		if (archive_compression(a) != ARCHIVE_COMPRESSION_NONE) {
 			archive_read_finish(a);
 			close(bsdtar->fd);
@@ -536,6 +550,8 @@ archive_names_from_file(struct bsdtar *bsdtar, struct archive *a)
 
 	lr = lafe_line_reader(bsdtar->names_from_file, bsdtar->option_null);
 	while ((line = lafe_line_reader_next(lr)) != NULL) {
+		if (cancel_requested(bsdtar))
+			break;
 		if (bsdtar->next_line_is_dir) {
 			set_chdir(bsdtar, line);
 			bsdtar->next_line_is_dir = 0;
@@ -651,6 +667,8 @@ copy_file_data(struct bsdtar *bsdtar, struct archive *a,
 
 	bytes_read = archive_read_data(ina, bsdtar->buff, FILEDATABUFLEN);
 	while (bytes_read > 0) {
+		if (cancel_requested(bsdtar))
+			return (-1);
 		if (need_report())
 			report_write(bsdtar, a, entry, progress);
 
@@ -695,6 +713,9 @@ write_hierarchy(struct bsdtar *bsdtar, struct archive *a, const char *path)
 		const struct stat *st = NULL; /* info to use for this entry */
 		const struct stat *lst = NULL; /* lstat() information */
 		int descend;
+
+		if (cancel_requested(bsdtar))
+			break;
 
 		if (tree_ret == TREE_ERROR_FATAL)
 			lafe_errc(1, tree_errno(tree),
@@ -1045,6 +1066,8 @@ write_file_data(struct bsdtar *bsdtar, struct archive *a,
 
 	bytes_read = read(fd, bsdtar->buff, FILEDATABUFLEN);
 	while (bytes_read > 0) {
+		if (cancel_requested(bsdtar))
+			return (-1);
 		if (need_report())
 			report_write(bsdtar, a, entry, progress);
 

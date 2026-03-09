@@ -1050,6 +1050,7 @@ int ios_setMiniRootURL(NSURL* mRoot) {
         currentSessionRef = ios_session_get_or_create(default_session_id);
         currentSession = ios_session_get_params(currentSessionRef);
         currentSession->context = default_session_id;
+        ios_session_clear_cancel(currentSession);
     }
 
     // Modify session with write lock
@@ -1655,18 +1656,23 @@ int pbcopy(int argc, char** argv) {
         const int bufsize = 1024;
         char buffer[bufsize];
         NSMutableData* data = [[NSMutableData alloc] init];
-        
+
         ssize_t count = 0;
-        while ((count = read(fileno(thread_stdin), buffer, bufsize-1))) {
+        while ((count = read(fileno(thread_stdin), buffer, bufsize-1)) > 0) {
             [data appendBytes:buffer length:count];
         }
-        
+
+        // count == 0: EOF, count < 0: error/cancellation (EBADF, EINTR)
+        if (count < 0) {
+            return 1;  // Cancelled or error — don't touch pasteboard
+        }
+
         NSString* result = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-        
+
         if (!result) {
             return 1;
         }
-        
+
         [UIPasteboard generalPasteboard].string = result;
     } else {
         if ((argv[1][0] == '-') && ((strcmp(argv[1], "-h") == 0) || (strcmp(argv[1], "--help") == 0))) {
@@ -2220,43 +2226,19 @@ int ios_kill(void)
 {
     if (currentSession == NULL) return ESRCH;
     if (currentSession->current_command_root_thread > 0) {
+        int result = ios_session_request_cancel(currentSession);
+
         struct sigaction query_action;
-        if ((sigaction (SIGINT, NULL, &query_action) >= 0) &&
+        if ((sigaction(SIGINT, NULL, &query_action) >= 0) &&
             (query_action.sa_handler != SIG_DFL) &&
             (query_action.sa_handler != SIG_IGN)) {
-            /* A programmer-defined signal handler is in effect. */
-            // This might be problematic with multiple commands running at the same time that all define SIGINT
-            // ...such as ls.
-            // !! this is called from the main thread. So make sure the signal handler does *not* call phtread_exit();
-            // For the same reason, thread_stdout is not defined!
-            FILE* main_stdin = thread_stdin;
-            FILE* main_stdout = thread_stdout;
-            FILE* main_stderr = thread_stderr;
-            thread_stdin = currentSession->stdin;
-            thread_stdout = currentSession->stdout;
-            thread_stderr = currentSession->stderr;
-            query_action.sa_handler(SIGINT);
-            thread_stdin = main_stdin;
-            thread_stdout = main_stdout;
-            thread_stderr = main_stderr;
-            // kill(getpid(), SIGINT); // infinite loop?
-        } else {
-            // Send pthread_cancel with the given signal to the current main thread, if there is one.
-            if (currentSession->current_command_root_thread != NULL) {
-                const char* commandName = ios_progname();
-                // pthread_kill for lua, bc, dc:
-                if ((strcmp(commandName, "lua") == 0) ||
-                    (strcmp(commandName, "bc") == 0) ||
-                    (strcmp(commandName, "dc") == 0)) {
-                    // Send a SIGINT interrupt to the command:
-                    // This works better than pthread_cancel with lua, bc and dc. #858
-                    return pthread_kill(currentSession->current_command_root_thread, SIGINT);
-                } else {
-                    // For the other commands, we use pthread_cancel, otherwise they don't stop. #900
-                    return pthread_cancel(currentSession->current_command_root_thread);
-                }
+            int signal_result = pthread_kill(currentSession->current_command_root_thread, SIGINT);
+            if (signal_result != 0) {
+                return signal_result;
             }
         }
+
+        return (result == 0) ? 0 : ESRCH;
     }
     // No process running
     return ESRCH;
@@ -2277,26 +2259,15 @@ int ios_kill_session(const void* sessionId) {
     ios_session_read_lock(session);
 
     if (session->current_command_root_thread > 0) {
-        pthread_t thread = session->current_command_root_thread;
+        result = ios_session_request_cancel(session);
 
-        // Check if there's a custom signal handler
         struct sigaction query_action;
         if ((sigaction(SIGINT, NULL, &query_action) >= 0) &&
             (query_action.sa_handler != SIG_DFL) &&
             (query_action.sa_handler != SIG_IGN)) {
-            // Custom signal handler detected - use pthread_cancel() instead of pthread_kill(SIGINT)
-            // Cross-thread signal delivery is unsafe when commands are blocking in syscalls
-            // like select() in ping, as it can corrupt thread state and cause crashes
-            result = pthread_cancel(thread);
-        } else {
-            // No custom handler - check command name for special handling
-            const char* commandName = ios_progname();
-            if ((strcmp(commandName, "lua") == 0) ||
-                (strcmp(commandName, "bc") == 0) ||
-                (strcmp(commandName, "dc") == 0)) {
-                result = pthread_kill(thread, SIGINT);
-            } else {
-                result = pthread_cancel(thread);
+            int signal_result = pthread_kill(session->current_command_root_thread, SIGINT);
+            if (signal_result != 0) {
+                result = signal_result;
             }
         }
     }
@@ -2596,6 +2567,21 @@ const void* ios_getContext(void) {
         return currentSession->context;
     else
         return parentSession->context;
+}
+
+bool ios_sessionCancelRequested(void) {
+    if (currentSession == NULL) return false;
+    return atomic_load(&currentSession->cancel_requested);
+}
+
+void ios_sessionClearCancel(void) {
+    if (currentSession == NULL) return;
+    ios_session_clear_cancel(currentSession);
+}
+
+int ios_sessionCancelFD(void) {
+    if (currentSession == NULL) return -1;
+    return ios_session_cancel_fd(currentSession);
 }
 
 // For customization:
@@ -2925,6 +2911,11 @@ NSString* beforeScriptCommandName(NSString* scriptName) {
 
 
 int ios_system(const char* inputCmd) {
+    // Clear cancel flag from any previous command
+    if (currentSession != NULL) {
+        ios_session_clear_cancel(currentSession);
+    }
+
     NSLog(@"command = %s pid= %d\n", inputCmd, ios_currentPid());
 
     // Lock mutex to protect global state (fullCommandPath, directoriesInPath, etc.)

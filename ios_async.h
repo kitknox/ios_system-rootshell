@@ -137,8 +137,8 @@ const char* ios_command_get_string(ios_command_t* cmd);
 /**
  * Kill running command
  *
- * Sends termination signal (SIGINT) to the command if it's still running.
- * Does nothing if command has already finished.
+ * Requests command cancellation if it's still running.
+ * The command is marked killed only after the worker thread actually exits.
  *
  * @param cmd Command handle
  * @return 0 on success, -1 on error

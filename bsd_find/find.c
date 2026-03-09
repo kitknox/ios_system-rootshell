@@ -187,6 +187,10 @@ find_execute(PLAN *plan, char *paths[])
 
 	exitstatus = 0;
 	while (errno = 0, (entry = fts_read(tree)) != NULL) {
+		if (ios_sessionCancelRequested()) {
+			errno = EINTR;
+			break;
+		}
         // debugging
         char dirBefore[MAXPATHLEN];
         getwd(dirBefore);
@@ -253,6 +257,8 @@ find_execute(PLAN *plan, char *paths[])
 		fts_close(tree);
 		tree = NULL;
 	}
+	if (e == EINTR && ios_sessionCancelRequested())
+		return (130);
 	if (e && (!ignore_readdir_race || e != ENOENT))
 		errc(1, e, "fts_read");
 	return (exitstatus);

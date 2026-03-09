@@ -12,6 +12,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdatomic.h>
 #include <sys/param.h>
 
 #ifdef __cplusplus
@@ -46,6 +47,11 @@ typedef struct _sessionParameters {
     char columns[5];
     char lines[5];
     bool activePager;
+
+    // Cooperative cancellation
+    _Atomic(bool) cancel_requested; // Set by ios_kill; commands check this to exit
+    int cancel_pipe_read_fd;        // Read end for cooperative cancellation wakeups
+    int cancel_pipe_write_fd;       // Write end for cooperative cancellation wakeups
 
     // New thread-safety fields
     pthread_rwlock_t rwlock;       // Fine-grained per-session lock
@@ -187,6 +193,30 @@ void ios_session_init_params(sessionParameters* sp);
  * @param sp Session parameters to cleanup
  */
 void ios_session_cleanup_params(sessionParameters* sp);
+
+/**
+ * Request cooperative cancellation for a session.
+ * Safe to call multiple times; writes a wake byte only on the first transition.
+ *
+ * @param session Session to cancel
+ * @return 0 on success, -1 on error
+ */
+int ios_session_request_cancel(sessionParameters* session);
+
+/**
+ * Clear cooperative cancellation state for a session and drain wake bytes.
+ *
+ * @param session Session to reset
+ */
+void ios_session_clear_cancel(sessionParameters* session);
+
+/**
+ * Get the read fd for the session cancellation pipe.
+ *
+ * @param session Session to query
+ * @return Cancellation read fd, or -1 if unavailable
+ */
+int ios_session_cancel_fd(sessionParameters* session);
 
 #ifdef __cplusplus
 }

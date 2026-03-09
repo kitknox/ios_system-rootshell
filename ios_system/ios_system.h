@@ -82,6 +82,9 @@ extern int ios_gettty(void);
 extern int ios_activePager(void);
 extern void ios_setContext(const void *context);
 extern const void* ios_getContext(void);
+extern bool ios_sessionCancelRequested(void);   // check if current session was cancelled
+extern void ios_sessionClearCancel(void);       // clear cancel flag (e.g. before next command)
+extern int ios_sessionCancelFD(void);           // read fd that becomes readable when session is cancelled
 extern void ios_setDirectoryURL(NSURL* workingDirectoryURL);
 extern void newPreviousDirectory(void);
 extern void makeGlobal(void);

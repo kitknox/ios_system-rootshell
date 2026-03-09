@@ -17,7 +17,11 @@ extern "C" {
 #include <stdarg.h>
 #include <stdio.h>
 #include <pthread.h>
+#include <stdbool.h>
+#include <sys/select.h>
+#include <time.h>
 #include <sys/signal.h>
+#include <poll.h>
 
 /* #define errx compileError
 #define err compileError
@@ -36,7 +40,14 @@ extern "C" {
   // iswprint depends on the given locale, and setlocale() fails on iOS:
   #define iswprint(a) 1
   #define write ios_write
+  #define read ios_read
+  #define select ios_select
+  #define pselect ios_pselect
+  #define poll ios_poll
   #define fwrite ios_fwrite
+  #define fread ios_fread
+  #define fgetc ios_fgetc
+  #define fgets ios_fgets
   #define puts ios_puts
   #define fputs ios_fputs
   #define fputc ios_fputc
@@ -110,7 +121,14 @@ extern sig_t ios_signal(int signal, sig_t function);
 extern int ios_fchdir(const int fd);
 extern int ios_ioctl(int fd, unsigned long request, void* arg);
 extern ssize_t ios_write(int fildes, const void *buf, size_t nbyte);
+extern ssize_t ios_read(int fildes, void *buf, size_t nbyte);
+extern int ios_select(int nfds, fd_set *restrict readfds, fd_set *restrict writefds, fd_set *restrict errorfds, struct timeval *restrict timeout);
+extern int ios_pselect(int nfds, fd_set *restrict readfds, fd_set *restrict writefds, fd_set *restrict errorfds, const struct timespec *restrict timeout, const sigset_t *restrict sigmask);
+extern int ios_poll(struct pollfd fds[], nfds_t nfds, int timeout);
 extern size_t ios_fwrite(const void *ptr, size_t size, size_t nitems, FILE *stream);
+extern size_t ios_fread(void *ptr, size_t size, size_t nitems, FILE *stream);
+extern int ios_fgetc(FILE *stream);
+extern char *ios_fgets(char *restrict s, int size, FILE *restrict stream);
 extern int ios_puts(const char *s);
 extern int ios_fputs(const char* s, FILE *stream);
 extern int ios_fputc(int c, FILE *stream);
@@ -118,6 +136,9 @@ extern int ios_putw(int w, FILE *stream);
 extern int ios_fflush(FILE *stream);
 extern int ios_getstdin(void);
 extern int ios_gettty(void);
+extern int ios_sessionCancelFD(void);
+extern bool ios_sessionCancelRequested(void);
+extern void ios_sessionClearCancel(void);
 extern int ios_opentty(void);
 extern void ios_closetty(void);
 extern void ios_stopInteractive(void);

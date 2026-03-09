@@ -11,6 +11,8 @@
 #include <unistd.h>
 #include <limits.h>  // For NAME_MAX
 #include <stdatomic.h>
+#include <fcntl.h>
+#include <errno.h>
 #import <Foundation/Foundation.h>
 
 // Hash table implementation for concurrent session storage
@@ -185,6 +187,7 @@ static session_entry_t* session_table_insert_locked(const void* session_id, size
     pthread_rwlock_init(&new_session->rwlock, NULL);
     atomic_init(&new_session->ref_count, 0);
     atomic_init(&new_session->is_destroying, false);
+    atomic_init(&new_session->cancel_requested, false);
 
     // Setup entry
     new_entry->session_id = session_id;
@@ -459,6 +462,23 @@ void ios_session_init_params(sessionParameters* sp) {
     strcpy(sp->columns, "80");
     strcpy(sp->lines, "80");  // Match original (was "80" not "25")
     sp->activePager = false;
+    sp->cancel_pipe_read_fd = -1;
+    sp->cancel_pipe_write_fd = -1;
+
+    int cancel_pipe[2];
+    if (pipe(cancel_pipe) == 0) {
+        sp->cancel_pipe_read_fd = cancel_pipe[0];
+        sp->cancel_pipe_write_fd = cancel_pipe[1];
+
+        int flags = fcntl(sp->cancel_pipe_read_fd, F_GETFL, 0);
+        if (flags >= 0) {
+            fcntl(sp->cancel_pipe_read_fd, F_SETFL, flags | O_NONBLOCK);
+        }
+        flags = fcntl(sp->cancel_pipe_write_fd, F_GETFL, 0);
+        if (flags >= 0) {
+            fcntl(sp->cancel_pipe_write_fd, F_SETFL, flags | O_NONBLOCK);
+        }
+    }
 
     // Initialize directories
     NSString* currentPath = [fileManager currentDirectoryPath];
@@ -496,4 +516,61 @@ void ios_session_cleanup_params(sessionParameters* sp) {
     if (sp->tty != NULL && sp->tty != stdin) {
         fclose(sp->tty);
     }
+
+    if (sp->cancel_pipe_read_fd >= 0) {
+        close(sp->cancel_pipe_read_fd);
+        sp->cancel_pipe_read_fd = -1;
+    }
+    if (sp->cancel_pipe_write_fd >= 0) {
+        close(sp->cancel_pipe_write_fd);
+        sp->cancel_pipe_write_fd = -1;
+    }
+}
+
+int ios_session_request_cancel(sessionParameters* session) {
+    if (session == NULL) {
+        return -1;
+    }
+
+    bool already_cancelled = atomic_exchange(&session->cancel_requested, true);
+    if (!already_cancelled && session->cancel_pipe_write_fd >= 0) {
+        char wake_byte = '!';
+        ssize_t written;
+        do {
+            written = write(session->cancel_pipe_write_fd, &wake_byte, 1);
+        } while (written < 0 && errno == EINTR);
+    }
+
+    return 0;
+}
+
+void ios_session_clear_cancel(sessionParameters* session) {
+    if (session == NULL) {
+        return;
+    }
+
+    atomic_store(&session->cancel_requested, false);
+
+    if (session->cancel_pipe_read_fd < 0) {
+        return;
+    }
+
+    char buffer[32];
+    while (true) {
+        ssize_t count = read(session->cancel_pipe_read_fd, buffer, sizeof(buffer));
+        if (count > 0) {
+            continue;
+        }
+        if (count < 0 && errno == EINTR) {
+            continue;
+        }
+        break;
+    }
+}
+
+int ios_session_cancel_fd(sessionParameters* session) {
+    if (session == NULL) {
+        return -1;
+    }
+    return session->cancel_pipe_read_fd;
 }

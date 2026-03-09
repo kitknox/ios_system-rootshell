@@ -11,14 +11,26 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
+#include <limits.h>
+#include <fcntl.h>
 #include <sys/wait.h>
 #include <sys/param.h>
+#include <sys/select.h>
+#include <time.h>
+#include <poll.h>
 #include <dlfcn.h>  // for dlopen()/dlsym()/dlclose()
 
 #include "ios_error.h"
 #include "ios_env_manager.h"
 #undef write
+#undef read
+#undef select
+#undef pselect
+#undef poll
 #undef fwrite
+#undef fread
+#undef fgetc
+#undef fgets
 #undef puts
 #undef fputs
 #undef fputc
@@ -66,12 +78,99 @@ static void executeWebAssemblyCommandsInOrder(void) {
     orderOfWebAssemblyCommands = 0;
 }
 
+static int ios_wait_for_fd_or_cancel(int fd, short events, int timeout_ms) {
+    if (fd < 0) {
+        errno = EBADF;
+        return -1;
+    }
+    if (ios_sessionCancelRequested()) {
+        errno = EINTR;
+        return -1;
+    }
+
+    int cancel_fd = ios_sessionCancelFD();
+    if (cancel_fd < 0 || cancel_fd == fd) {
+        return 0;
+    }
+
+    struct pollfd fds[2];
+    fds[0].fd = fd;
+    fds[0].events = events | POLLERR | POLLHUP;
+    fds[0].revents = 0;
+    fds[1].fd = cancel_fd;
+    fds[1].events = POLLIN | POLLERR | POLLHUP;
+    fds[1].revents = 0;
+
+    for (;;) {
+        int result = poll(fds, 2, timeout_ms);
+        if (result < 0) {
+            if (errno == EINTR && !ios_sessionCancelRequested()) {
+                continue;
+            }
+            return -1;
+        }
+        if (result == 0) {
+            return 0;
+        }
+        if (fds[1].revents != 0) {
+            errno = EINTR;
+            return -1;
+        }
+        if (fds[0].revents & POLLNVAL) {
+            errno = EBADF;
+            return -1;
+        }
+        return 0;
+    }
+}
+
+// Darwin/BSD stdio exposes buffered byte count and buffer pointer in FILE.
+// These fields are not portable and this helper is intentionally platform-specific.
+static size_t ios_stream_buffered_input(FILE *stream) {
+    return (stream != NULL && stream->_r > 0) ? (size_t)stream->_r : 0;
+}
+
+static bool ios_fgets_satisfied_by_buffer(FILE *stream, int size) {
+    size_t buffered = ios_stream_buffered_input(stream);
+    if (size <= 1) {
+        return true;
+    }
+    if (buffered >= (size_t)(size - 1)) {
+        return true;
+    }
+    if (buffered == 0) {
+        return false;
+    }
+    return memchr(stream->_p, '\n', buffered) != NULL;
+}
+
+static bool ios_should_abort_stdio_write(FILE *stream) {
+    if (!ios_sessionCancelRequested() || stream == NULL) {
+        return false;
+    }
+
+    if (thread_stdout != NULL && fileno(stream) == fileno(thread_stdout)) {
+        errno = EINTR;
+        return true;
+    }
+    if (fileno(stream) == STDOUT_FILENO) {
+        errno = EINTR;
+        return true;
+    }
+    return false;
+}
+
 
 int printf (const char *format, ...) {
     va_list arg;
     int done;
     
     va_start (arg, format);
+    if (ios_sessionCancelRequested()) {
+        errno = EINTR;
+        va_end(arg);
+        return -1;
+    }
     done = vfprintf (thread_stdout, format, arg);
     va_end (arg);
     
@@ -86,6 +185,10 @@ int fprintf(FILE * restrict stream, const char * restrict format, ...) {
     if (thread_stdout == NULL) thread_stdout = stdout;
 
     va_start (arg, format);
+    if (stream != NULL && ios_should_abort_stdio_write(stream)) {
+        va_end(arg);
+        return -1;
+    }
     if (fileno(stream) == STDOUT_FILENO) done = vfprintf (thread_stdout, format, arg);
 #ifndef debugPrint
     else if (fileno(stream) == STDERR_FILENO) done = vfprintf (thread_stderr, format, arg);
@@ -108,6 +211,9 @@ int scanf (const char *format, ...) {
 
     fflush(thread_stdout);
     fflush(thread_stderr);
+    if (thread_stdin != NULL && ios_wait_for_fd_or_cancel(fileno(thread_stdin), POLLIN, -1) < 0) {
+        return EOF;
+    }
     va_start (ap, format);
     count = vfscanf (thread_stdin, format, ap);
     va_end (ap);
@@ -123,24 +229,264 @@ int ios_fflush(FILE *stream) {
     return fflush(stream);
 }
 ssize_t ios_write(int fildes, const void *buf, size_t nbyte) {
+    if (ios_sessionCancelRequested() && (fildes == STDOUT_FILENO || (thread_stdout != NULL && fildes == fileno(thread_stdout)))) {
+        errno = EINTR;
+        return -1;
+    }
     if (thread_stdout == NULL) thread_stdout = stdout;
     if (thread_stderr == NULL) thread_stderr = stderr;
     if (fildes == STDOUT_FILENO) return write(fileno(thread_stdout), buf, nbyte);
     if (fildes == STDERR_FILENO) return write(fileno(thread_stderr), buf, nbyte);
     return write(fildes, buf, nbyte);
 }
+
+ssize_t ios_read(int fildes, void *buf, size_t nbyte) {
+    if (thread_stdin == NULL) thread_stdin = stdin;
+
+    int effective_fd = fildes;
+    if (fildes == STDIN_FILENO && thread_stdin != NULL) {
+        effective_fd = fileno(thread_stdin);
+    }
+
+    if (ios_sessionCancelRequested()) {
+        errno = EINTR;
+        return -1;
+    }
+
+    int flags = fcntl(effective_fd, F_GETFL, 0);
+    bool is_nonblocking = (flags >= 0) && ((flags & O_NONBLOCK) != 0);
+    if (!is_nonblocking && ios_wait_for_fd_or_cancel(effective_fd, POLLIN, -1) < 0) {
+        return -1;
+    }
+
+    for (;;) {
+        ssize_t result = read(effective_fd, buf, nbyte);
+        if (result < 0 && errno == EINTR && !ios_sessionCancelRequested()) {
+            if (!is_nonblocking && ios_wait_for_fd_or_cancel(effective_fd, POLLIN, -1) < 0) {
+                return -1;
+            }
+            continue;
+        }
+        return result;
+    }
+}
+
+int ios_select(int nfds, fd_set *restrict readfds, fd_set *restrict writefds, fd_set *restrict errorfds, struct timeval *restrict timeout) {
+    if (ios_sessionCancelRequested()) {
+        errno = EINTR;
+        return -1;
+    }
+
+    int cancel_fd = ios_sessionCancelFD();
+    if (cancel_fd < 0 || cancel_fd >= FD_SETSIZE) {
+        return select(nfds, readfds, writefds, errorfds, timeout);
+    }
+
+    bool caller_watched_cancel_fd = (readfds != NULL) && FD_ISSET(cancel_fd, readfds);
+    fd_set local_readfds;
+    if (readfds != NULL) {
+        local_readfds = *readfds;
+    } else {
+        FD_ZERO(&local_readfds);
+    }
+    FD_SET(cancel_fd, &local_readfds);
+
+    int effective_nfds = (cancel_fd >= nfds) ? cancel_fd + 1 : nfds;
+    int result = select(effective_nfds, &local_readfds, writefds, errorfds, timeout);
+    if (result <= 0) {
+        return result;
+    }
+
+    if (FD_ISSET(cancel_fd, &local_readfds)) {
+        errno = EINTR;
+        return -1;
+    }
+
+    if (readfds != NULL) {
+        if (!caller_watched_cancel_fd) {
+            FD_CLR(cancel_fd, &local_readfds);
+        }
+        *readfds = local_readfds;
+    }
+    return result;
+}
+
+int ios_pselect(int nfds, fd_set *restrict readfds, fd_set *restrict writefds, fd_set *restrict errorfds, const struct timespec *restrict timeout, const sigset_t *restrict sigmask) {
+    if (ios_sessionCancelRequested()) {
+        errno = EINTR;
+        return -1;
+    }
+
+    int cancel_fd = ios_sessionCancelFD();
+    if (cancel_fd < 0 || cancel_fd >= FD_SETSIZE) {
+        return pselect(nfds, readfds, writefds, errorfds, timeout, sigmask);
+    }
+
+    bool caller_watched_cancel_fd = (readfds != NULL) && FD_ISSET(cancel_fd, readfds);
+    fd_set local_readfds;
+    if (readfds != NULL) {
+        local_readfds = *readfds;
+    } else {
+        FD_ZERO(&local_readfds);
+    }
+    FD_SET(cancel_fd, &local_readfds);
+
+    int effective_nfds = (cancel_fd >= nfds) ? cancel_fd + 1 : nfds;
+    int result = pselect(effective_nfds, &local_readfds, writefds, errorfds, timeout, sigmask);
+    if (result <= 0) {
+        return result;
+    }
+
+    if (FD_ISSET(cancel_fd, &local_readfds)) {
+        errno = EINTR;
+        return -1;
+    }
+
+    if (readfds != NULL) {
+        if (!caller_watched_cancel_fd) {
+            FD_CLR(cancel_fd, &local_readfds);
+        }
+        *readfds = local_readfds;
+    }
+    return result;
+}
+
+int ios_poll(struct pollfd fds[], nfds_t nfds, int timeout) {
+    if (ios_sessionCancelRequested()) {
+        errno = EINTR;
+        return -1;
+    }
+
+    int cancel_fd = ios_sessionCancelFD();
+    if (cancel_fd < 0) {
+        return poll(fds, nfds, timeout);
+    }
+
+    struct pollfd stack_fds[65];
+    struct pollfd *local_fds = stack_fds;
+    size_t needed_fds = (size_t)nfds + 1;
+    bool heap_allocated = false;
+
+    if (needed_fds > (sizeof(stack_fds) / sizeof(stack_fds[0]))) {
+        if (needed_fds > (SIZE_MAX / sizeof(struct pollfd))) {
+            errno = ENOMEM;
+            return -1;
+        }
+        local_fds = malloc(needed_fds * sizeof(struct pollfd));
+        if (local_fds == NULL) {
+            errno = ENOMEM;
+            return -1;
+        }
+        heap_allocated = true;
+    }
+
+    for (nfds_t i = 0; i < nfds; i++) {
+        local_fds[i] = fds[i];
+        local_fds[i].revents = 0;
+    }
+    local_fds[nfds].fd = cancel_fd;
+    local_fds[nfds].events = POLLIN | POLLERR | POLLHUP;
+    local_fds[nfds].revents = 0;
+
+    int result = poll(local_fds, nfds + 1, timeout);
+    if (result <= 0) {
+        if (heap_allocated) {
+            free(local_fds);
+        }
+        return result;
+    }
+
+    if (local_fds[nfds].revents != 0) {
+        errno = EINTR;
+        if (heap_allocated) {
+            free(local_fds);
+        }
+        return -1;
+    }
+
+    for (nfds_t i = 0; i < nfds; i++) {
+        fds[i].revents = local_fds[i].revents;
+    }
+    if (heap_allocated) {
+        free(local_fds);
+    }
+    return result;
+}
+
 size_t ios_fwrite(const void *restrict ptr, size_t size, size_t nitems, FILE *restrict stream) {
 #ifdef debugPrint
     return fwrite(ptr, size, nitems, stderr);
 #endif
+    if (stream != NULL && ios_should_abort_stdio_write(stream)) {
+        return 0;
+    }
     if (thread_stdout == NULL) thread_stdout = stdout;
     if (thread_stderr == NULL) thread_stderr = stderr;
     if (fileno(stream) == STDOUT_FILENO) return fwrite(ptr, size, nitems, thread_stdout);
     if (fileno(stream) == STDERR_FILENO) return fwrite(ptr, size, nitems, thread_stderr);
     return fwrite(ptr, size, nitems, stream);
 }
+
+size_t ios_fread(void *restrict ptr, size_t size, size_t nitems, FILE *restrict stream) {
+    if (stream == NULL) {
+        errno = EINVAL;
+        return 0;
+    }
+    if (ios_sessionCancelRequested()) {
+        errno = EINTR;
+        return 0;
+    }
+    size_t requested = 0;
+    if (size != 0 && nitems > (SIZE_MAX / size)) {
+        requested = SIZE_MAX;
+    } else {
+        requested = size * nitems;
+    }
+    if (ios_stream_buffered_input(stream) < requested &&
+        ios_wait_for_fd_or_cancel(fileno(stream), POLLIN, -1) < 0) {
+        return 0;
+    }
+    return fread(ptr, size, nitems, stream);
+}
+
+int ios_fgetc(FILE *stream) {
+    if (stream == NULL) {
+        errno = EINVAL;
+        return EOF;
+    }
+    if (ios_sessionCancelRequested()) {
+        errno = EINTR;
+        return EOF;
+    }
+    if (ios_stream_buffered_input(stream) == 0 &&
+        ios_wait_for_fd_or_cancel(fileno(stream), POLLIN, -1) < 0) {
+        return EOF;
+    }
+    return fgetc(stream);
+}
+
+char *ios_fgets(char *restrict s, int size, FILE *restrict stream) {
+    if (stream == NULL) {
+        errno = EINVAL;
+        return NULL;
+    }
+    if (ios_sessionCancelRequested()) {
+        errno = EINTR;
+        return NULL;
+    }
+    if (!ios_fgets_satisfied_by_buffer(stream, size) &&
+        ios_wait_for_fd_or_cancel(fileno(stream), POLLIN, -1) < 0) {
+        return NULL;
+    }
+    return fgets(s, size, stream);
+}
+
 int ios_puts(const char *s) {
     if (thread_stdout == NULL) thread_stdout = stdout;
+    if (ios_sessionCancelRequested()) {
+        errno = EINTR;
+        return EOF;
+    }
     // puts adds a newline at the end.
     int returnValue = fputs(s, thread_stdout);
     fputc('\n', thread_stdout);
@@ -150,6 +496,9 @@ int ios_fputs(const char* s, FILE *stream) {
 #ifdef debugPrint
     return fputs(s, stderr);
 #endif
+    if (stream != NULL && ios_should_abort_stdio_write(stream)) {
+        return EOF;
+    }
     if (thread_stdout == NULL) thread_stdout = stdout;
     if (thread_stderr == NULL) thread_stderr = stderr;
     if (fileno(stream) == STDOUT_FILENO) return fputs(s, thread_stdout);
@@ -160,6 +509,9 @@ int ios_fputc(int c, FILE *stream) {
 #ifdef debugPrint
     return fputc(c, stderr);
 #endif
+    if (stream != NULL && ios_should_abort_stdio_write(stream)) {
+        return EOF;
+    }
     if (thread_stdout == NULL) thread_stdout = stdout;
     if (thread_stderr == NULL) thread_stderr = stderr;
     if (fileno(stream) == STDOUT_FILENO) return fputc(c, thread_stdout);
@@ -170,6 +522,9 @@ int ios_fputc(int c, FILE *stream) {
 #include <assert.h>
 
 int ios_putw(int w, FILE *stream) {
+    if (stream != NULL && ios_should_abort_stdio_write(stream)) {
+        return EOF;
+    }
     if (thread_stdout == NULL) thread_stdout = stdout;
     if (thread_stderr == NULL) thread_stderr = stderr;
     if (fileno(stream) == STDOUT_FILENO) return putw(w, thread_stdout);

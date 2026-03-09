@@ -26,10 +26,12 @@ struct _ios_command_handle {
     FILE* output;
     FILE* error;
     void* session;
+    bool owns_session;
 
     // Status tracking
     _Atomic(ios_command_status_t) status;   // Current status
     _Atomic(int) exit_code;                 // Exit code when done
+    _Atomic(bool) kill_requested;           // Cooperative kill requested
 
     // Synchronization
     pthread_mutex_t mutex;                  // Protects mutable state
@@ -110,6 +112,8 @@ static void* command_thread_func(void* arg) {
     // Check if timed out
     if (check_timeout(cmd)) {
         atomic_store(&cmd->status, IOS_CMD_TIMEOUT);
+    } else if (atomic_load(&cmd->kill_requested)) {
+        atomic_store(&cmd->status, IOS_CMD_KILLED);
     } else if (result == 0) {
         atomic_store(&cmd->status, IOS_CMD_COMPLETED);
     } else {
@@ -123,6 +127,10 @@ static void* command_thread_func(void* arg) {
 
     // Invoke callback if set
     invoke_callback_if_set(cmd, result);
+
+    if (cmd->owns_session && cmd->session != NULL) {
+        ios_closeSession(cmd->session);
+    }
 
     // Release the reference we took at the start of this function.
     // This ensures cmd stays valid until we're completely done.
@@ -187,11 +195,20 @@ ios_command_t* ios_system_async(const char* command, const ios_async_options_t* 
     }
 
     // Initialize I/O streams
+    const void* session_id = ios_getContext();
+    bool owns_session = false;
     if (options) {
         cmd->input = options->input;
         cmd->output = options->output;
         cmd->error = options->error;
-        cmd->session = options->session;
+        if (options->session != NULL) {
+            session_id = options->session;
+        }
+        if (session_id == NULL) {
+            session_id = cmd;
+            owns_session = true;
+        }
+        cmd->session = (void*)session_id;
         cmd->callback = options->callback;
         cmd->callback_data = options->callback_data;
         cmd->timeout_ms = options->timeout_ms;
@@ -199,7 +216,11 @@ ios_command_t* ios_system_async(const char* command, const ios_async_options_t* 
         cmd->input = NULL;
         cmd->output = NULL;
         cmd->error = NULL;
-        cmd->session = NULL;
+        if (session_id == NULL) {
+            session_id = cmd;
+            owns_session = true;
+        }
+        cmd->session = (void*)session_id;
         cmd->callback = NULL;
         cmd->callback_data = NULL;
         cmd->timeout_ms = -1;
@@ -209,10 +230,12 @@ ios_command_t* ios_system_async(const char* command, const ios_async_options_t* 
     pthread_mutex_init(&cmd->mutex, NULL);
     pthread_cond_init(&cmd->done, NULL);
     cmd->callback_invoked = false;
+    cmd->owns_session = owns_session;
 
     // Initialize status
     atomic_init(&cmd->status, IOS_CMD_PENDING);
     atomic_init(&cmd->exit_code, -1);
+    atomic_init(&cmd->kill_requested, false);
     atomic_init(&cmd->ref_count, 1);  // Initial reference
 
     // Record start time for timeout checking
@@ -346,16 +369,9 @@ int ios_command_kill(ios_command_t* cmd) {
         return 0;  // Already finished
     }
 
-    // Use pthread_cancel() instead of pthread_kill(SIGINT)
-    // pthread_kill(SIGINT) is dangerous because it can interrupt blocking syscalls
-    // like pthread_cond_wait() in ios_work_wait(), causing crashes.
-    // pthread_cancel() cooperates with cancellation points and is much safer.
-    int result = pthread_cancel(cmd->thread_id);
+    atomic_store(&cmd->kill_requested, true);
 
-    if (result == 0) {
-        atomic_store(&cmd->status, IOS_CMD_KILLED);
-        pthread_cond_broadcast(&cmd->done);
-    }
+    int result = ios_kill_session(cmd->session);
 
     pthread_mutex_unlock(&cmd->mutex);
 
