@@ -64,6 +64,12 @@ static void* pipeline_stage_thread(void* arg) {
     extern __thread FILE* thread_stdout;
     extern __thread FILE* thread_stderr;
 
+    // Switch to the correct session context so ios_system picks up
+    // session-level state (tty fd, window size, environment, etc.)
+    if (stage->session) {
+        ios_switchSession(stage->session);
+    }
+
     // Set child streams (for params setup) via the exported function
     extern void ios_setChildStreams(FILE*, FILE*, FILE*);
     ios_setChildStreams(stage->stdin_stream, stage->stdout_stream, stage->stderr_stream);

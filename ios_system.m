@@ -3152,7 +3152,7 @@ int ios_system(const char* inputCmd) {
             .input = thread_stdin,
             .output = thread_stdout,
             .error = thread_stderr,
-            .session = currentSession
+            .session = (currentSession ? (void*)currentSession->context : NULL)
         };
 
         // Unlock mutex before pipeline execution - pipeline stages will call ios_system()
