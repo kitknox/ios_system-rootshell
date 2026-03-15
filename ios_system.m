@@ -195,6 +195,11 @@ static bool curlIsRunning = false;
 // Invalidated only on app restart (in-memory only)
 static NSMutableDictionary<NSString*, NSDictionary*>* commandResolutionCache = nil;
 
+// Direct function pointer registry: commandName → function pointer.
+// Bypasses dlsym entirely — immune to symbol stripping in release/archive builds.
+// Only populated by explicit registerCommandFunction() calls from the host app.
+static NSMutableDictionary<NSString*, NSValue*>* registeredCommandFunctions = nil;
+
 // pointers for sh sessions:
 char* sh_session = "sh_session";
 char* inExtension_session = "inExtension";
@@ -1077,7 +1082,7 @@ BOOL __allowed_cd_to_path(NSString *path) {
     if ([path hasPrefix:miniRoot]) {
         return YES;
     }
-    if (strlen(currentSession->localMiniRoot) != 0) {
+    if (currentSession != NULL && strlen(currentSession->localMiniRoot) != 0) {
         NSString *localMiniRootPath = [NSString stringWithCString:currentSession->localMiniRoot encoding:NSUTF8StringEncoding];
         // NSLog(@"__allowed_cd_to_path: localMiniRoot: %s\n", localMiniRootPath);
         if (localMiniRootPath && [path hasPrefix:localMiniRootPath]) {
@@ -1119,12 +1124,17 @@ void __cd_to_dir(NSString *newDir, NSFileManager *fileManager) {
   NSString* resultDir = [fileManager currentDirectoryPath];
 
   if (__allowed_cd_to_path(resultDir)) {
-    strcpy(currentSession->previousDirectory, currentSession->currentDir);
-    strcpy(currentSession->currentDir, [newDir UTF8String]);
+    if (currentSession != NULL) {
+      strcpy(currentSession->previousDirectory, currentSession->currentDir);
+      strcpy(currentSession->currentDir, [newDir UTF8String]);
+    }
     return;
   }
-  
+
   fprintf(thread_stderr, "cd: %s: permission denied\n", [newDir UTF8String]);
+  if (currentSession == NULL) {
+    return;
+  }
   // If the user tried to go above the miniRoot, set it to miniRoot
   if ([miniRoot hasPrefix:resultDir]) {
     [fileManager changeCurrentDirectoryPath:miniRoot];
@@ -1158,15 +1168,22 @@ int ios_fchdir(const int fd) {
     // NSLog(@"Inside fchdir, path: %s for session: %s\n", resultDir.UTF8String, (char*)currentSession->context);
 
     if (__allowed_cd_to_path(resultDir)) {
-        strcpy(currentSession->previousDirectory, currentSession->currentDir);
-        strcpy(currentSession->currentDir, [resultDir UTF8String]);
+        if (currentSession != NULL) {
+            strcpy(currentSession->previousDirectory, currentSession->currentDir);
+            strcpy(currentSession->currentDir, [resultDir UTF8String]);
+        }
         errno = 0;
         // NSLog(@"Unlocking for thread %x in ios_fchdir\n", pthread_self());
         pthread_mutex_unlock(&pid_mtx);
         return 0;
     }
-    
+
     errno = EACCES; // Permission denied
+    if (currentSession == NULL) {
+        // NSLog(@"Unlocking for thread %x in ios_fchdir\n", pthread_self());
+        pthread_mutex_unlock(&pid_mtx);
+        return -1;
+    }
     // If the user tried to go above the miniRoot, set it to miniRoot
     if ([miniRoot hasPrefix:resultDir]) {
         [fileManager changeCurrentDirectoryPath:miniRoot];
@@ -1197,13 +1214,18 @@ int ios_fchdir_nolock(const int fd) {
     // NSLog(@"fchdir_nolock, success: %s\n", resultDir.UTF8String);
 
     if (__allowed_cd_to_path(resultDir)) {
-        strcpy(currentSession->previousDirectory, currentSession->currentDir);
-        strcpy(currentSession->currentDir, [resultDir UTF8String]);
+        if (currentSession != NULL) {
+            strcpy(currentSession->previousDirectory, currentSession->currentDir);
+            strcpy(currentSession->currentDir, [resultDir UTF8String]);
+        }
         errno = 0;
         return 0;
     }
-    
+
     errno = EACCES; // Permission denied
+    if (currentSession == NULL) {
+        return -1;
+    }
     // If the user tried to go above the miniRoot, set it to miniRoot
     if ([miniRoot hasPrefix:resultDir]) {
         [fileManager changeCurrentDirectoryPath:miniRoot];
@@ -1256,6 +1278,9 @@ int chdir_nolock(const char* path) {
     }
     
     errno = EACCES; // Permission denied
+    if (currentSession == NULL) {
+        return -1;
+    }
     // If the user tried to go above the miniRoot, set it to miniRoot
     if ([miniRoot hasPrefix:resultDir]) {
         [fileManager changeCurrentDirectoryPath:miniRoot];
@@ -2619,6 +2644,19 @@ void replaceCommand(NSString* commandName, NSString* functionName, bool allOccur
         }
     }
     commandList = [mutableDict copy]; // back to non-mutable version
+}
+
+// Register a command with a direct function pointer, bypassing dlsym.
+// Use this for commands defined with @_cdecl in Swift, where Whole Module
+// Optimization + archive stripping removes symbols that dlsym needs.
+// The function pointer is stored directly and used at execution time —
+// no symbol table lookup required.
+void registerCommandFunction(NSString* commandName, int (*function)(int, char**)) {
+    if (commandName == nil || function == NULL) return;
+    if (registeredCommandFunctions == nil) {
+        registeredCommandFunctions = [[NSMutableDictionary alloc] initWithCapacity:16];
+    }
+    registeredCommandFunctions[commandName] = [NSValue valueWithPointer:function];
 }
 
 // For customization:
@@ -4026,6 +4064,14 @@ int ios_system(const char* inputCmd) {
                 }
             }
             // Don't load the function if we already set it to &too_many_scripts.
+            if (function == NULL) {
+                // Check direct function pointer registry first (bypasses dlsym).
+                NSValue* registeredFunc = registeredCommandFunctions[commandName];
+                if (registeredFunc != nil) {
+                    function = [registeredFunc pointerValue];
+                    NSLog(@"Using registered function pointer for %s", commandName.UTF8String);
+                }
+            }
             if (function == NULL) {
                 if ([libraryName isEqualToString: @"SELF"]) handle = RTLD_SELF;  // commands defined in ios_system.framework
                 else if ([libraryName isEqualToString: @"MAIN"]) handle = RTLD_MAIN_ONLY; // commands defined in main program

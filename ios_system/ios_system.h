@@ -90,6 +90,7 @@ extern void newPreviousDirectory(void);
 extern void makeGlobal(void);
 extern void makeLocal(void);
 extern void replaceCommand(NSString* commandName, NSString* functionName, bool allOccurences);
+extern void registerCommandFunction(NSString* commandName, int (*function)(int, char**));
 extern NSError* addCommandList(NSString* fileLocation);
 extern NSArray* backgroundCommandList;
 extern int numPythonInterpreters;
