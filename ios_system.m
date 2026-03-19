@@ -176,12 +176,7 @@ int numTeXInterpreters = MaxTeXInterpreters; // Apps can overwrite this
 static bool TeXIsRunning[MaxTeXInterpreters];
 static int currentTeXInterpreter = 0;
 NSArray *TeXcommands = nil; // initialized later
-// Multiple dash:
-// limit to 6 (for now)
-static const int MaxDashCommands = 6; // const so we can allocate an array
-int numDashCommands = MaxDashCommands; // Apps can overwrite this
-static bool dashIsRunning[MaxDashCommands];
-static int currentDashCommand = 0;
+// dash: thread-local state in dash_ios, no instance limits needed
 // multiple ssh (limit to 2):
 static const int MaxSshCommands = 2; // const so we can allocate an array
 int numSshCommands = MaxSshCommands; // Apps can overwrite this
@@ -432,10 +427,10 @@ static void cleanup_function(void* parameters) {
     }
     // If the command was started as a pipe, we wait for the first command to finish sending data
     // There is an exception for ssh, which can be started by scp or sftp. They will wait for it.
-    // Another exception for "dash -c": one command is reading its output
+    // Dash handles its own pipes; ssh is waited on by scp/sftp
     if ((!joinMainThread) && p->isPipeOut
-        && (strcmp(commandName, "ssh") != 0) // not ssh
-        && (! ((strcmp(commandName, "dash") == 0) && (p->argc >= 2) && (strcmp(p->argv_ref[1], "-c") == 0)))) { // not "dash -c something"
+        && (strcmp(commandName, "ssh") != 0)
+        && (strcmp(commandName, "dash") != 0)) {
         if (currentSession->current_command_root_thread != 0) {
             if (currentSession->current_command_root_thread != current_thread) {
                 NSLog(@"Thread %x is waiting for root_thread of currentSession: %x \n", current_thread, currentSession->current_command_root_thread);
@@ -484,8 +479,6 @@ static void cleanup_function(void* parameters) {
         PerlIsRunning[p->numInterpreter] = false;
     } else if ([TeXcommands containsObject: commandNameString]) {
         TeXIsRunning[p->numInterpreter] = false;
-    } else if (strcmp(commandName, "dash") == 0) {
-        dashIsRunning[p->numInterpreter] = false;
     } else if ((strcmp(commandName, "ssh") == 0) || (strcmp(commandName, "scp") == 0) || (strcmp(commandName, "sftp") == 0)) {
         NSLog(@"Ending a ssh command: %d", p->numInterpreter);
         sshIsRunning[p->numInterpreter] = false;
@@ -3781,26 +3774,11 @@ int ios_system(const char* inputCmd) {
         if (commandList == nil) initializeCommandList();
         NSString* commandName = [NSString stringWithCString:argv[0] encoding:NSUTF8StringEncoding];
         if ([commandName isEqualToString:@"sh"]) {
-            // if it's sh -c commands (or sh -c command1 || command2), we continue using our own sh_main
-            // (for continuity: keep our known bugs, rather than break things).
-            // otherwise we use dash_main:
-            bool cflag = false;
-            // Technically, "-c" should be the first argument of sh, so no need to scan through all arguments
-            // But we're being extra careful.
-            for (int i = 1; i < argc; i++) {
-                if (argv[i][0] == '-') {
-                    if (strlen(argv[i]) == 1) continue;
-                    if (strchr(argv[i], 'c') != NULL) {
-                        cflag = true;
-                        break;
-                    }
-                } else break;
-            }
-            if (!cflag) { // We need to know it's dash, not sh.
-                commandName = @"dash";
-                argv[0] = realloc(argv[0], 5);
-                strcpy(argv[0], "dash");
-            }
+            // Route all sh invocations to dash (real POSIX shell).
+            // dash_ios handles -c, scripts, and interactive mode.
+            commandName = @"dash";
+            argv[0] = realloc(argv[0], 5);
+            strcpy(argv[0], "dash");
         }
         //
         // Check command resolution cache first (for non-interpreter commands)
@@ -3812,8 +3790,6 @@ int ios_system(const char* inputCmd) {
                 ![commandName hasPrefix:@"perl"] &&
                 ![commandName hasPrefix:@"tex"] &&
                 ![commandName hasPrefix:@"latex"] &&
-                ![commandName isEqualToString:@"dash"] &&
-                ![commandName isEqualToString:@"sh"] &&
                 ![commandName hasPrefix:@"ssh"] &&
                 ![commandName isEqualToString:@"curl"]) {
                 void* cachedHandle = [cachedCmd[@"handle"] pointerValue];
@@ -3959,52 +3935,7 @@ int ios_system(const char* inputCmd) {
                         }
                     }
                 }
-            } else if ([commandName hasPrefix: @"dash"]) {
-                // Ability to start multiple dash commands:
-                // start by increasing the number of the interpreter, until we're out.
-                int numInterpreter = 0;
-                if (currentDashCommand < numDashCommands) {
-                    numInterpreter = currentDashCommand;
-                    currentDashCommand++;
-                } else {
-                    NSDate *start = [NSDate date];
-                    NSDate *now = [NSDate date];
-                    NSTimeInterval timeInterval = [now timeIntervalSinceDate:start];
-                    bool timeout = true;
-                    while (timeInterval < 1) { // keep trying for 1 second
-                        while  (numInterpreter < numDashCommands) {
-                            if (dashIsRunning[numInterpreter] == false) {
-                                timeout = false;
-                                break;
-                            }
-                            numInterpreter++;
-                        }
-                        if (!timeout) break; // need to break twice!
-                        numInterpreter = 0;
-                        now = [NSDate date];
-                        timeInterval = [now timeIntervalSinceDate:start];
-                    }
-                    if (timeout) {
-                        display_alert(@"Too many dash scripts", @"There are too many dash scripts running at the same time. Try closing some of them.");
-                        NSLog(@"%@", @"Too many dash scripts running simultaneously.\n");
-                        function = &too_many_scripts;
-                        functionName = @"notAValidCommand";
-                        currentSession->global_errno = ENOENT;
-                        argv[0][0] = 'x'; // prevent reinitialization in cleanup_function
-                    }
-                }
-                if ((numInterpreter >= 0) && (numInterpreter < numDashCommands)) {
-                    params->numInterpreter = numInterpreter;
-                    dashIsRunning[numInterpreter] = true;
-                    NSLog(@"Starting a dash shell: %d", params->numInterpreter);
-                    if (numInterpreter > 0) {
-                        char suffix[2];
-                        suffix[0] = 'A' + (numInterpreter - 1);
-                        suffix[1] = 0;
-                        commandName = [@"dash" stringByAppendingString: [NSString stringWithCString: suffix encoding:NSUTF8StringEncoding]];
-                        libraryName = [libraryName stringByReplacingOccurrencesOfString:@"dash" withString:commandName];
-                    }
-                }
+            // dash: thread-local state in dash_ios, no multi-instance handling needed
             } else if ([commandName isEqualToString: @"ssh"] || [commandName isEqualToString: @"scp"] || [commandName isEqualToString: @"sftp"]) {
                 // Ability to start multiple ssh commands:
                 // start by increasing the number of the interpreter, until we're out.
