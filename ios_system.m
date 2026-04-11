@@ -3193,6 +3193,12 @@ int ios_system(const char* inputCmd) {
         ios_pipeline_t* pipeline = ios_pipeline_execute(command, &pipeline_opts);
         if (!pipeline) {
             NSLog(@"[ios_system] Pipeline creation failed");
+            // Match the pattern used by every other early return in ios_system:
+            // clear thread_ids[current_pid] and unlock pid_mtx so callers that
+            // wrap this with ios_fork/ios_waitpid (ios_execute_sequential,
+            // ios_execute_conditional, splitCommandAndExecute, sh_main) don't
+            // spin forever on the -1 sentinel left by ios_nextAvailablePid.
+            ios_storeThreadId(0);
             free(originalCommand);
             return -1;
         }
@@ -3200,6 +3206,12 @@ int ios_system(const char* inputCmd) {
         int result = ios_pipeline_wait(pipeline, -1);
         ios_pipeline_destroy(pipeline);
 
+        // See comment above: without this, any `;`- or `&&`/`||`-wrapped
+        // pipeline hangs in ios_waitpid's busy-loop on thread_ids[pid] == -1,
+        // and leaves pid_mtx permanently locked. Reproduces as e.g.
+        // `curl ...|jq;` — the pipeline runs and its output renders, then the
+        // shell wedges because ios_execute_sequential never gets to return.
+        ios_storeThreadId(0);
         free(originalCommand);
         return result;
     }
