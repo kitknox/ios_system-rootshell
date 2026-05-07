@@ -726,6 +726,11 @@ static inline const pid_t ios_nextAvailablePid(void) {
     pthread_mutex_lock(&pid_mtx);
     char** currentEnvironment = environmentVariables(current_pid);
     int previousPidId = current_pid;
+    // chdir() / ios_fchdir() now serialize the process cwd through chdir_mtx
+    // (not pid_mtx), so getwd() must be done under chdir_mtx to avoid racing
+    // a concurrent user/library chdir — otherwise the child could save a
+    // torn previousDirectory and the eventual cleanup would restore the
+    // process to the wrong directory. Lock order: pid_mtx > chdir_mtx.
     if (!pid_overflow && (last_allocated_pid < IOS_MAX_THREADS - 1)
         && (thread_ids[last_allocated_pid+1] == 0)) {
         current_pid = last_allocated_pid + 1;
@@ -734,7 +739,9 @@ static inline const pid_t ios_nextAvailablePid(void) {
         numVariablesSet[current_pid] = 0;
         environment[current_pid] = NULL;
         storeEnvironment(currentEnvironment); // duplicate the environment variables
+        pthread_mutex_lock(&chdir_mtx);
         getwd(previousDirectory[current_pid]); // store current working directory
+        pthread_mutex_unlock(&chdir_mtx);
         previousPid[current_pid] = previousPidId;
         pthread_mutex_unlock(&pid_mtx);
         return current_pid;
@@ -755,7 +762,9 @@ static inline const pid_t ios_nextAvailablePid(void) {
             numVariablesSet[current_pid] = 0;
             environment[current_pid] = NULL;
             storeEnvironment(currentEnvironment); // duplicate the environment variables
+            pthread_mutex_lock(&chdir_mtx);
             getwd(previousDirectory[current_pid]); // store current working directory
+            pthread_mutex_unlock(&chdir_mtx);
             previousPid[current_pid] = previousPidId;
             pthread_mutex_unlock(&pid_mtx);
             return current_pid;
