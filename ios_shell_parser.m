@@ -19,7 +19,28 @@ extern __thread FILE* thread_stderr;
 extern void ios_setChildStreams(FILE* _stdin, FILE* _stdout, FILE* _stderr);
 extern pid_t ios_fork(void);
 extern void ios_waitpid(pid_t pid);
+extern void ios_storeThreadId(pthread_t thread);
+extern pid_t ios_currentPid(void);
+extern void ios_setCurrentPid(pid_t pid);
 extern bool joinMainThread;
+
+// Consume the outer ios_fork() sentinel for this thread, mirroring what
+// run_function/cleanup_function would do for an asynchronous dispatch:
+// restore current_pid to the parent and clear the slot. No-op when no
+// outer fork is active (sentinel != -1).
+//
+// Used by the synchronous-recursive wrappers ios_execute_sequential(),
+// ios_execute_conditional(), and ios_pipeline_execute() — they fully
+// consume their command synchronously, so by the time they return, the
+// outer caller's ios_waitpid() should observe the slot as freed.
+//
+// Substitution (capture_command_output) does NOT use this — substitution
+// is only an intermediate step inside ios_system, and post-substitution
+// work may still need to dispatch under the outer pid. capture_command_output
+// preserves the outer pid via save/restore of current_pid instead.
+static inline void release_outer_fork_sentinel(void) {
+    ios_storeThreadId(0);
+}
 
 #pragma mark - Helper Functions
 
@@ -154,6 +175,19 @@ static char* capture_command_output(const char* command) {
         return strdup("");
     }
 
+    // Save current_pid so we can restore it after our synchronous ios_fork+
+    // ios_system+ios_waitpid sequence below. Without restoration, the outer
+    // ios_system's subsequent dispatch (pthread_create) would inherit the
+    // already-released inner pid as params->pid — and any further sentinel
+    // bookkeeping for the post-substitution work would land on the wrong
+    // slot, causing the outer caller's ios_waitpid to either hang on a stale
+    // -1 sentinel, or — worse — return prematurely while async work is still
+    // running. We deliberately do NOT release the outer sentinel here:
+    // substitution is intermediate; the post-substitution work in ios_system
+    // still needs the outer pid to be in flight so the wrapping caller's
+    // ios_waitpid blocks correctly.
+    pid_t saved_outer_pid = ios_currentPid();
+
     NSLog(@"[ios_shell_parser] Capturing output of: %s", command);
 
     // Create pipe for capturing output
@@ -180,6 +214,14 @@ static char* capture_command_output(const char* command) {
     pid_t pid = ios_fork();
     (void)ios_system(command);  // Execute command, output goes to pipe
     ios_waitpid(pid);
+
+    // Restore the outer pid so the post-substitution work in the calling
+    // ios_system continues to dispatch under the wrapping caller's pid.
+    // ios_fork above advanced current_pid to a fresh inner pid; ios_waitpid
+    // doesn't restore it (the cleanup runs on the worker thread's TLS, not
+    // ours). Without this, params->pid for any subsequent pthread_create in
+    // the outer ios_system would land on the released inner slot.
+    ios_setCurrentPid(saved_outer_pid);
 
     joinMainThread = saved_join;
 
@@ -391,6 +433,8 @@ static char** parse_semicolons(const char* input, int* count) {
 }
 
 int ios_execute_sequential(const char* command) {
+    release_outer_fork_sentinel();
+
     NSLog(@"[ios_shell_parser] Sequential execution: %s", command);
 
     int count = 0;
@@ -500,6 +544,8 @@ void ios_free_cmd_nodes(ios_cmd_node_t* head) {
 }
 
 int ios_execute_conditional(const char* command) {
+    release_outer_fork_sentinel();
+
     NSLog(@"[ios_shell_parser] Conditional execution: %s", command);
 
     ios_cmd_node_t* nodes = parse_conditionals(command);

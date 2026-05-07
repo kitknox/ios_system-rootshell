@@ -203,6 +203,15 @@ ios_pipeline_t* ios_pipeline_execute(const char* command, const ios_pipeline_opt
         return NULL;
     }
 
+    // Release any outer ios_fork() sentinel before dispatching pipeline
+    // stages. Each stage runs on its own pthread and may itself call
+    // ios_fork() (via substitution, ;, &&, ||, etc. inside the stage's
+    // ios_system call). Those forks would deadlock on pid_mtx if a wrapping
+    // caller still holds it from its own outer ios_fork(). No-op when no
+    // outer fork is active.
+    extern void ios_storeThreadId(pthread_t thread);
+    ios_storeThreadId(0);
+
     ios_pipeline_t* pipeline = calloc(1, sizeof(ios_pipeline_t));
     if (!pipeline) {
         return NULL;

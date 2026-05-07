@@ -380,6 +380,7 @@ typedef struct _functionParameters {
 } functionParameters;
 
 extern pthread_mutex_t pid_mtx;
+extern pthread_mutex_t chdir_mtx;
 extern _Atomic(int) cleanup_counter;
 extern void ios_releaseBackgroundThread(pthread_t thread);
 extern void ios_setCurrentPid(pid_t pid);
@@ -510,7 +511,26 @@ static void cleanup_function(void* parameters) {
     // Some programs stop waiting as soon as stdout/stderr close (which makes sense)
     // This fclose does close the fileno, but I find it re-opened later.
     cleanup_counter++;
-    while (pthread_mutex_trylock(&pid_mtx) != 0) { } // Someone else has the lock, so we wait.
+    // Two-stage drain: cleanup_counter > 0 blocks NEW ios_fork() and chdir/
+    // ios_fchdir from starting (they spin on cleanup_counter at their tops),
+    // and the trylocks below wait for any caller already past that guard to
+    // release its mutex.
+    //
+    // - chdir_mtx: ios_releaseThread() will call chdir_nolock() to restore
+    //   the previous cwd. The process cwd is global, so racing with a user/
+    //   library chdir that's holding chdir_mtx would leave the wrong cwd
+    //   (and a stale currentSession->currentDir).
+    //
+    // - pid_mtx: ios_nextAvailablePid() mutates thread_ids[], previousPid[],
+    //   previousDirectory[], and environment[] for the new slot under
+    //   pid_mtx. ios_releaseThread() reads/mutates that same state for
+    //   the slot being released. Without this drain, an allocator already
+    //   past the cleanup_counter guard would race with the cleanup mutating
+    //   thread_ids/previousPid for an unrelated slot — torn writes / stale
+    //   reads of shared per-pid arrays.
+    while (pthread_mutex_trylock(&chdir_mtx) != 0) { }
+    pthread_mutex_unlock(&chdir_mtx);
+    while (pthread_mutex_trylock(&pid_mtx) != 0) { }
     pthread_mutex_unlock(&pid_mtx);
     if (mustCloseStderr) {
         NSLog(@"Closing stderr (mustCloseStderr): %d \n", fileno(p->stderr));
@@ -1142,15 +1162,13 @@ void __cd_to_dir(NSString *newDir, NSFileManager *fileManager) {
 // For some Unix commands that call fchdir (including vim):
 #undef fchdir
 int ios_fchdir(const int fd) {
-    // NSLog(@"Locking for thread %x in ios_fchdir\n", pthread_self());
     while (cleanup_counter > 0) { } // Don't chdir while a command is ending.
-    // We cannot have someone change the current directory while a command is starting or terminating.
-    // hence the mutex_lock here.
-    pthread_mutex_lock(&pid_mtx);
+    // Use chdir_mtx (not pid_mtx) so directory changes can't be held hostage by
+    // the ios_fork/ios_storeThreadId contract or by spurious-unlock corruption.
+    pthread_mutex_lock(&chdir_mtx);
     int result = fchdir(fd);
     if (result < 0) {
-        // NSLog(@"Unlocking for thread %x in ios_fchdir\n", pthread_self());
-        pthread_mutex_unlock(&pid_mtx);
+        pthread_mutex_unlock(&chdir_mtx);
         return result;
     }
     // We managed to change the directory. Update currentSession as well:
@@ -1158,7 +1176,6 @@ int ios_fchdir(const int fd) {
     // Allowed "cd" = below miniRoot *or* below localMiniRoot
     NSFileManager *fileManager = [[NSFileManager alloc] init];
     NSString* resultDir = [fileManager currentDirectoryPath];
-    // NSLog(@"Inside fchdir, path: %s for session: %s\n", resultDir.UTF8String, (char*)currentSession->context);
 
     if (__allowed_cd_to_path(resultDir)) {
         if (currentSession != NULL) {
@@ -1166,15 +1183,13 @@ int ios_fchdir(const int fd) {
             strcpy(currentSession->currentDir, [resultDir UTF8String]);
         }
         errno = 0;
-        // NSLog(@"Unlocking for thread %x in ios_fchdir\n", pthread_self());
-        pthread_mutex_unlock(&pid_mtx);
+        pthread_mutex_unlock(&chdir_mtx);
         return 0;
     }
 
     errno = EACCES; // Permission denied
     if (currentSession == NULL) {
-        // NSLog(@"Unlocking for thread %x in ios_fchdir\n", pthread_self());
-        pthread_mutex_unlock(&pid_mtx);
+        pthread_mutex_unlock(&chdir_mtx);
         return -1;
     }
     // If the user tried to go above the miniRoot, set it to miniRoot
@@ -1186,8 +1201,7 @@ int ios_fchdir(const int fd) {
         // go back to where we were before:
         [fileManager changeCurrentDirectoryPath:[NSString stringWithCString:currentSession->currentDir encoding:NSUTF8StringEncoding]];
     }
-    // NSLog(@"Unlocking for thread %x in ios_fchdir\n", pthread_self());
-    pthread_mutex_unlock(&pid_mtx);
+    pthread_mutex_unlock(&chdir_mtx);
     return -1;
 }
 
@@ -1290,53 +1304,50 @@ int chdir_nolock(const char* path) {
 // Is also called at the end of the execution of each command
 int chdir(const char* path) {
     while (cleanup_counter > 0) { } // Don't chdir while a command is ending.
-    // NSLog(@"Locking for thread %x in chdir, cd %s\n", pthread_self(), path);
-    // We cannot have someone change the current directory while a command is starting or terminating.
-    // hence the mutex_lock here.
-    pthread_mutex_lock(&pid_mtx);
+    // Use chdir_mtx (not pid_mtx) so directory changes can't be held hostage by
+    // the ios_fork/ios_storeThreadId contract or by spurious-unlock corruption.
+    // This affects every libc::chdir caller in the process — Rust's
+    // std::env::set_current_dir, vim's chdir, etc.
+    pthread_mutex_lock(&chdir_mtx);
     NSFileManager *fileManager = [[NSFileManager alloc] init];
     NSString* newDir = @(path);
     BOOL isDir;
     // Check for permission and existence:
     if (![fileManager fileExistsAtPath:newDir isDirectory:&isDir]) {
         errno = ENOENT; // No such file or directory
-        // NSLog(@"Unlocking for thread %x in chdir (no such directory)\n", pthread_self());
-        pthread_mutex_unlock(&pid_mtx);
+        pthread_mutex_unlock(&chdir_mtx);
         return -1;
     }
     if (!isDir) {
         errno = ENOTDIR; // Not a directory
-        // NSLog(@"Unlocking for thread %x in chdir (not a directory)\n", pthread_self());
-        pthread_mutex_unlock(&pid_mtx);
+        pthread_mutex_unlock(&chdir_mtx);
         return -1;
     }
     if (![fileManager isReadableFileAtPath:newDir] ||
         ![fileManager changeCurrentDirectoryPath:newDir]) {
         errno = EACCES; // Permission denied
-        // NSLog(@"Unlocking for thread %x in chdir (not readable)\n", pthread_self());
-        pthread_mutex_unlock(&pid_mtx);
+        pthread_mutex_unlock(&chdir_mtx);
         return -1;
     }
-    
+
     // We managed to change the directory.
     // Was that allowed?
     // Allowed "cd" = below miniRoot *or* below localMiniRoot
     NSString* resultDir = [fileManager currentDirectoryPath];
-    // NSLog(@"After changing directory, result= %s\n", resultDir.UTF8String);
 
     if (__allowed_cd_to_path(resultDir)) {
         if (currentSession != NULL) {
             strcpy(currentSession->currentDir, [resultDir UTF8String]);
         }
-        // NSLog(@"Unlocking for thread %x in chdir (allowed)\n", pthread_self());
-        pthread_mutex_unlock(&pid_mtx);
+        pthread_mutex_unlock(&chdir_mtx);
         errno = 0;
         return 0;
     }
-    
+
     errno = EACCES; // Permission denied
     if (currentSession == NULL) {
-        return -1   ;
+        pthread_mutex_unlock(&chdir_mtx);
+        return -1;
     }
     // If the user tried to go above the miniRoot, set it to miniRoot
     if ([miniRoot hasPrefix:resultDir]) {
@@ -1347,8 +1358,7 @@ int chdir(const char* path) {
         // go back to where we were before:
         [fileManager changeCurrentDirectoryPath:[NSString stringWithCString:currentSession->currentDir encoding:NSUTF8StringEncoding]];
     }
-    // NSLog(@"Unlocking for thread %lx in chdir (not allowed)\n", (unsigned long)pthread_self());
-    pthread_mutex_unlock(&pid_mtx);
+    pthread_mutex_unlock(&chdir_mtx);
     return -1;
 }
 
@@ -3068,7 +3078,9 @@ int ios_system(const char* inputCmd) {
     char* semicolonPos = strstrquoted((char*)command, ";");
     if (semicolonPos != NULL) {
         NSLog(@"[ios_system] Detected semicolon, using sequential execution: %s", command);
-        // Unlock mutex - sequential execution will recursively call ios_system()
+        // Unlock mutex - sequential execution will recursively call ios_system().
+        // ios_execute_sequential() releases any outer ios_fork() sentinel at
+        // its entry to avoid pid_mtx deadlock when nested under a wrapper.
         pthread_mutex_unlock(&ios_system_mutex);
         int returnValue = ios_execute_sequential(command);
         free(originalCommand);
@@ -3091,7 +3103,9 @@ int ios_system(const char* inputCmd) {
         }
         if (is_conditional) {
             NSLog(@"[ios_system] Detected conditional operators, using conditional execution: %s", command);
-            // Unlock mutex - conditional execution will recursively call ios_system()
+            // Unlock mutex - conditional execution will recursively call ios_system().
+            // ios_execute_conditional() releases any outer ios_fork() sentinel at
+            // its entry to avoid pid_mtx deadlock when nested under a wrapper.
             pthread_mutex_unlock(&ios_system_mutex);
             int returnValue = ios_execute_conditional(command);
             free(originalCommand);
@@ -3190,15 +3204,11 @@ int ios_system(const char* inputCmd) {
         // and need to acquire the mutex themselves
         pthread_mutex_unlock(&ios_system_mutex);
 
+        // ios_pipeline_execute() releases any outer ios_fork() sentinel at
+        // its entry to avoid pid_mtx deadlock when nested under a wrapper.
         ios_pipeline_t* pipeline = ios_pipeline_execute(command, &pipeline_opts);
         if (!pipeline) {
             NSLog(@"[ios_system] Pipeline creation failed");
-            // Match the pattern used by every other early return in ios_system:
-            // clear thread_ids[current_pid] and unlock pid_mtx so callers that
-            // wrap this with ios_fork/ios_waitpid (ios_execute_sequential,
-            // ios_execute_conditional, splitCommandAndExecute, sh_main) don't
-            // spin forever on the -1 sentinel left by ios_nextAvailablePid.
-            ios_storeThreadId(0);
             free(originalCommand);
             return -1;
         }
@@ -3206,12 +3216,6 @@ int ios_system(const char* inputCmd) {
         int result = ios_pipeline_wait(pipeline, -1);
         ios_pipeline_destroy(pipeline);
 
-        // See comment above: without this, any `;`- or `&&`/`||`-wrapped
-        // pipeline hangs in ios_waitpid's busy-loop on thread_ids[pid] == -1,
-        // and leaves pid_mtx permanently locked. Reproduces as e.g.
-        // `curl ...|jq;` — the pipeline runs and its output renders, then the
-        // shell wedges because ios_execute_sequential never gets to return.
-        ios_storeThreadId(0);
         free(originalCommand);
         return result;
     }
@@ -3225,6 +3229,7 @@ int ios_system(const char* inputCmd) {
     functionParameters *params = (functionParameters*) malloc(sizeof(functionParameters));
     if (params == NULL) {
         NSLog(@"Unable to allocate params in ios_system");
+        ios_storeThreadId(0);
         pthread_mutex_unlock(&ios_system_mutex);
         return -1;
     }
@@ -4121,6 +4126,9 @@ int ios_system(const char* inputCmd) {
                 int thread_err = pthread_create(&cmd_thread, NULL, run_function, params);
                 if (thread_err != 0) {
                     NSLog(@"[ios_system] ERROR: Failed to create thread for command: %d", thread_err);
+                    // Match the early-return pattern: clear the -1 sentinel so any
+                    // wrapping ios_fork/ios_waitpid caller doesn't spin forever.
+                    ios_storeThreadId(0);
                     currentSession->isMainThread = true;
                     free(params);
                     return currentSession->global_errno;
@@ -4165,6 +4173,9 @@ int ios_system(const char* inputCmd) {
 
                 if (thread_err != 0) {
                     NSLog(@"[ios_system] ERROR: Failed to create thread for piped/background command: %d", thread_err);
+                    // Same as the sync branch: clear the -1 sentinel so any
+                    // wrapping ios_fork/ios_waitpid caller doesn't spin forever.
+                    ios_storeThreadId(0);
                     free(params);
                     return currentSession->global_errno;
                 }

@@ -668,6 +668,11 @@ static int pid_overflow = 0;
 static __thread pid_t current_pid = 0;
 // We need to lock current_pid during operations
 pthread_mutex_t pid_mtx = PTHREAD_MUTEX_INITIALIZER;
+// Separate mutex for the chdir override. Decoupling chdir from pid_mtx
+// prevents Rust's std::env::set_current_dir (and any other libc::chdir caller
+// — vim, helix, etc.) from being held hostage by the ios_fork/ios_storeThreadId
+// contract or by spurious-unlock corruption of pid_mtx.
+pthread_mutex_t chdir_mtx = PTHREAD_MUTEX_INITIALIZER;
 _Atomic(int) cleanup_counter = 0;
 static pid_t last_allocated_pid = 0;
 
@@ -693,10 +698,31 @@ void newPreviousDirectory(void) {
 }
 
 // We do not recycle process ids too quickly to avoid collisions.
+//
+// IMPORTANT: pid_mtx is now held only briefly here, just long enough to
+// serialize slot allocation between concurrent ios_fork() callers. It is
+// released before this function returns. The previous design left it locked
+// until ios_storeThreadId() — which had two consequences we needed to fix:
+//
+//   1. Same-thread reentrancy deadlock: any code path that called ios_fork()
+//      again on the same thread before ios_storeThreadId() ran (capture_command_output
+//      under a wrapping ios_execute_sequential, etc.) would block on pid_mtx
+//      held by itself.
+//
+//   2. Cross-thread pthread_mutex_unlock UB: ios_storeThreadId() runs on the
+//      worker thread spawned by run_function, but the lock was acquired by
+//      the parent thread that called ios_fork(). pthread_mutex_unlock() from
+//      a non-owning thread is undefined behavior on PTHREAD_MUTEX_NORMAL,
+//      and on Darwin it progressively corrupts the mutex — eventually hanging
+//      every chdir() (when chdir was still using pid_mtx) and other callers.
+//
+// The "in-flight" property of an allocated pid is now expressed entirely by
+// the sentinel `thread_ids[pid] == -1`, with no implicit lock state. Reads
+// of thread_ids[] in ios_waitpid() rely on cache coherence + the optnone
+// attribute on the spin loop (already in place).
 void storeEnvironment(char* envp[]);
 static inline const pid_t ios_nextAvailablePid(void) {
     while (cleanup_counter > 0) { } // Don't start a command while another is ending.
-    // fprintf(stderr, "Locking in ios_nextAvailablePid\n");
     pthread_mutex_lock(&pid_mtx);
     char** currentEnvironment = environmentVariables(current_pid);
     int previousPidId = current_pid;
@@ -710,7 +736,7 @@ static inline const pid_t ios_nextAvailablePid(void) {
         storeEnvironment(currentEnvironment); // duplicate the environment variables
         getwd(previousDirectory[current_pid]); // store current working directory
         previousPid[current_pid] = previousPidId;
-        // fprintf(stderr, "Returning from ios_nextAvailablePid, pid= %d\n", current_pid);
+        pthread_mutex_unlock(&pid_mtx);
         return current_pid;
     }
     // We've already started more than IOS_MAX_THREADS threads.
@@ -731,7 +757,7 @@ static inline const pid_t ios_nextAvailablePid(void) {
             storeEnvironment(currentEnvironment); // duplicate the environment variables
             getwd(previousDirectory[current_pid]); // store current working directory
             previousPid[current_pid] = previousPidId;
-            // fprintf(stderr, "Returning from ios_nextAvailablePid, pid= %d\n", current_pid);
+            pthread_mutex_unlock(&pid_mtx);
             return current_pid;
         }
         // Dangerous: if the process is already killed, this wil crash
@@ -745,11 +771,39 @@ static inline const pid_t ios_nextAvailablePid(void) {
 }
 
 inline void ios_storeThreadId(pthread_t thread) {
-    // To avoid issues when a command starts a command without forking,
-    // we only store thread IDs for the first thread of the "process".
-    // fprintf(stderr, "Unlocking pid %d, storing thread %x current value: %x\n", current_pid, thread,  thread_ids[current_pid]);
+    // Two callers, two semantics. In both cases we only act when sentinel == -1
+    // (i.e. an ios_fork() actually advanced current_pid for this thread):
+    //
+    // 1. run_function passes its own pthread_self() at the START of an
+    //    asynchronous command. We record the thread id; ios_releaseThread()
+    //    will do the full bookkeeping (restore current_pid, clear the slot,
+    //    chdir back) when the command finishes.
+    //
+    // 2. The synchronous-release sites pass 0 — ios_system early returns and
+    //    the wrappers in ios_shell_parser.m / ios_pipeline.m that consume the
+    //    outer fork's slot synchronously without a run_function dispatch.
+    //    We mirror ios_releaseThread here: restore current_pid to the parent
+    //    and clear the slot. (We deliberately don't call chdir_nolock — that
+    //    path needs chdir_mtx serialization, which cleanup_function provides
+    //    but the synchronous-release sites don't. Those sites haven't changed
+    //    cwd themselves, so leaving cwd alone is correct.)
+    //
+    // We take pid_mtx briefly here, same-thread lock+unlock — no cross-thread
+    // unlock UB like the original "lock-acquired-by-parent, unlocked-by-worker"
+    // pattern. The lock serializes our mutations of the shared per-pid arrays
+    // (thread_ids, previousPid) against concurrent ios_nextAvailablePid, which
+    // also reads/writes those arrays under pid_mtx. Without this, on ARM's
+    // relaxed memory model an allocator could scan a stale thread_ids[] or
+    // see a torn previousPid[] update relative to its sentinel transition.
+    pthread_mutex_lock(&pid_mtx);
     if (thread_ids[current_pid] == -1) {
-        thread_ids[current_pid] = thread;
+        if (thread == 0) {
+            pid_t released = current_pid;
+            current_pid = previousPid[released];
+            thread_ids[released] = 0;
+        } else {
+            thread_ids[current_pid] = thread;
+        }
     }
     pthread_mutex_unlock(&pid_mtx);
 }
@@ -981,48 +1035,64 @@ void ios_releaseThread(pthread_t thread) {
     if (thread == NULL) {
         return;
     }
+    // Lock order: pid_mtx > chdir_mtx. pid_mtx serializes the scan and
+    // mutation of thread_ids[]/previousPid[] (also touched by
+    // ios_nextAvailablePid and ios_storeThreadId). chdir_mtx serializes
+    // the cwd restore against any concurrent chdir()/ios_fchdir() call —
+    // the process cwd is global, so an unsynchronized chdir_nolock would
+    // race a user/library chdir and leave the wrong actual cwd or a stale
+    // currentSession->currentDir. cleanup_function (the typical caller)
+    // already drains both locks before invoking us, but taking them here is
+    // self-protective and lets this function be safely called from any
+    // context.
     // TODO: this is inefficient. Replace with NSMutableArray?
+    pthread_mutex_lock(&pid_mtx);
     for (int p = 0; p < IOS_MAX_THREADS; p++) {
         if (thread_ids[p] == thread) {
-            // fprintf(stderr, "Found Id %d\n", p);
-            // Don't reset the environment; sometimes, commands try to change the environment while it is being erased.
-            // resetEnvironment(p);
-            // fprintf(stderr, "Reset current directory to %s because process %d terminates\n", previousDirectory[p], p);
             current_pid = previousPid[p];
             thread_ids[p] = NULL;
+            pthread_mutex_lock(&chdir_mtx);
             chdir_nolock(previousDirectory[p]);
+            pthread_mutex_unlock(&chdir_mtx);
+            pthread_mutex_unlock(&pid_mtx);
             return;
         }
     }
-    // fprintf(stderr, "Not found\n");
+    pthread_mutex_unlock(&pid_mtx);
 }
 
 void ios_releaseBackgroundThread(pthread_t thread) {
     // Same as ios_releaseThread, but do not reset the directory.
+    pthread_mutex_lock(&pid_mtx);
     for (int p = 0; p < IOS_MAX_THREADS; p++) {
         if (thread_ids[p] == thread) {
-            // fprintf(stderr, "Found Id %d\n", p);
             current_pid = previousPid[p];
             thread_ids[p] = NULL;
+            pthread_mutex_unlock(&pid_mtx);
             return;
         }
     }
-    // fprintf(stderr, "Not found\n");
+    pthread_mutex_unlock(&pid_mtx);
 }
 
 void ios_releaseThreadId(pid_t pid) {
     // Don't reset the environment; sometimes, commands try to change the environment while it is being erased.
     // resetEnvironment(pid);
+    //
+    // This is the public entry point called from outside cleanup_function
+    // (wasm3, jsc, source.swift). Unlike ios_releaseThread we cannot rely on
+    // a wrapping cleanup_counter / chdir_mtx drain — concurrent user
+    // chdir()/ios_fchdir() would race the cwd restore. Take chdir_mtx
+    // explicitly. Lock order: pid_mtx > chdir_mtx (matches ios_releaseThread).
+    pthread_mutex_lock(&pid_mtx);
     if (thread_ids[pid] != 0) {
-        // fprintf(stderr, "Locking for pid %d in ios_releaseThreadId\n", pid);
-        // fprintf(stderr, "Reset current directory to %s because process %d terminates\n", previousDirectory[pid], pid);
+        pthread_mutex_lock(&chdir_mtx);
         chdir_nolock(previousDirectory[pid]);
+        pthread_mutex_unlock(&chdir_mtx);
         current_pid = previousPid[pid];
         thread_ids[pid] = 0;
-        // fprintf(stderr, "Unlocking for pid %d in ios_releaseThreadId\n", pid);
-    } else {
-        // fprintf(stderr, "ios_releaseThreadId: pid %d was already terminated.\n", pid);
     }
+    pthread_mutex_unlock(&pid_mtx);
 }
 
 pid_t ios_currentPid(void) {
@@ -1042,9 +1112,9 @@ pid_t vfork(void) { return ios_nextAvailablePid(); }
 // simple replacement of waitpid for swift programs
 // We use "optnone" to prevent optimization, otherwise the while loops never end.
 __attribute__ ((optnone)) void ios_waitpid(pid_t pid) {
-    
+
     executeWebAssemblyCommandsInOrder();
-    
+
     pthread_t threadToWaitFor;
     // Old system: no explicit pid, just store last thread Id.
     if ((pid == -1) || (pid == 0)) {
