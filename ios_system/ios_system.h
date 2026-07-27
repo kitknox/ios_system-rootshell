@@ -101,3 +101,10 @@ extern const char* ios_getBookmarkedVersion(const char* p);
 extern void ios_stopInteractive(void);
 extern void finishedPreparingWebAssemblyCommand(void);
 extern int webAssemblyCommandOrder(void);
+
+// Public sub-headers that ship in the framework alongside this umbrella.
+// Without these includes Clang reports them as uncovered
+// (-Wincomplete-umbrella) and `#import <ios_system/ios_async.h>` fails to
+// resolve as a submodule.
+#include "ios_async.h"
+#include "ios_pid_allocator.h"
