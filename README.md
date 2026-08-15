@@ -57,15 +57,50 @@ setenv SSL_CERT_FILE = $HOME/Documents/cacert.pem
 ```
 Your Mileage May Vary. Note that iOS already defines `$HOME` and `$PATH`. 
 
-## Installation:
+## Swift binary package
 
-**The easy way:** (Xcode 12 and above) `ios_system` is available as a set of binary frameworks. Add this project as "Swift Package dependency", and link and embed the frameworks as you need them. 
+The `ios_system` Swift package product contains the core frameworks used by
+rootshell: `ios_system`, `awk`, `files`, `shell`, and `text`. It supports:
 
-**The semi-hard way:**
+- iOS 14 or later (arm64 device and arm64 simulator)
+- Mac Catalyst 14 or later (arm64 and x86_64)
+- visionOS 1 or later (arm64 device and arm64 simulator)
 
-Type `swift run --package-path xcfs build`. This will download all the requirements (`libssh2` and `openssl`) and build all the ios_system XcFrameworks, in the `.build` directory.
+After this repository is public and its first release is published, add it as
+a Swift package dependency and select the `ios_system` library product:
 
-**The hard way:**
+```text
+https://github.com/kitknox/ios_system-rootshell.git
+```
+
+JOE is versioned separately in the public
+[`joe-rootshell`](https://github.com/kitknox/joe-rootshell) repository. Its
+Swift package pulls in the matching `ios_system` package automatically.
+
+## Building a release
+
+Clone the source and initialize its JOE submodule using public HTTPS URLs:
+
+```sh
+git clone --recurse-submodules https://github.com/kitknox/ios_system-rootshell.git
+cd ios_system-rootshell
+swift run --package-path xcfs build
+```
+
+The build command creates the five core XCFrameworks plus JOE for iOS,
+Simulator, Mac Catalyst, visionOS, and visionOS Simulator. It writes ignored
+XCFrameworks, zip archives, and `release.md` under `.build/`. Publish the five
+core archives with the matching `ios_system-rootshell` release; publish the
+JOE archive with the matching `joe-rootshell` release. Update each
+`Package.swift` checksum before tagging the release.
+
+To build one or more schemes, pass a comma-separated list, for example:
+
+```sh
+swift run --package-path xcfs build ios_system,shell
+```
+
+## Building in Xcode
 
 - Open the Xcode project `ios_system.xcodeproj` and hit build. This will create the `ios_system` framework, ready to be included in your own projects. 
 - Compile the other targets as well: `files`, `tar`, `curl`, `awk`, `shell`, `text`, `ssh_cmd`. This will create the corresponding frameworks.

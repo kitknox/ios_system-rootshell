@@ -80,13 +80,11 @@ In Build Phases > Link Binary With Libraries, add:
 2. Add `joe_framework/joe.h` as Public header
 3. Copy `joe_framework/Info.plist` to the joe target
 
-### Step 6: Add Resources (Optional)
+### Step 6: Add App Resources (Optional)
 
-For syntax highlighting and config files:
-1. Go to Build Phases > Copy Bundle Resources
-2. Add `joe/rc/joerc` (or create a processed version)
-3. Add `joe/syntax/` directory
-4. Add `joe/colors/` directory
+For syntax highlighting and config files, add the processed `joerc`, `ftyperc`,
+`joe/syntax/`, and `joe/colors/` to the consuming app's Copy Bundle Resources
+phase. These application-owned files are not included in `joe.framework`.
 
 ### Step 7: Create Scheme
 

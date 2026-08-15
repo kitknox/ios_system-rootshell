@@ -8,12 +8,15 @@ Joe (Joe's Own Editor) is a full-featured terminal text editor that has been ada
 
 ## First-Time Setup
 
-Your app must copy joe's resource files from the framework bundle to a writable location on first launch. Joe requires configuration files (joerc) and optionally syntax highlighting definitions.
+Your app must bundle joe's resource files and copy them to a writable location
+on first launch. The rootshell app keeps its copies under `Resources/joe`.
+These files are deliberately not duplicated inside `joe.framework`.
 
 ### Resource Files
 
-The joe.framework bundle contains these resources:
+The app resource directory must contain:
 - `joerc` - Main configuration file
+- `ftyperc` - File type and syntax selection rules
 - `syntax/` - Syntax highlighting definitions (*.jsf files)
 - `colors/` - Color scheme definitions
 
@@ -34,16 +37,14 @@ func setupJoeResources() {
         try? fileManager.createDirectory(at: joeHomeURL, withIntermediateDirectories: true)
     }
 
-    // Find joe.framework bundle
-    guard let frameworkBundle = Bundle(identifier: "com.example.joe") else {
-        print("joe.framework not found")
-        return
-    }
-
     // Copy joerc if not present
-    let joercDest = joeHomeURL.appendingPathComponent("joerc")
+    let joercDest = documentsURL.appendingPathComponent(".joerc")
     if !fileManager.fileExists(atPath: joercDest.path) {
-        if let joercSource = frameworkBundle.url(forResource: "joerc", withExtension: nil) {
+        if let joercSource = Bundle.main.url(
+            forResource: "joerc",
+            withExtension: nil,
+            subdirectory: "joe"
+        ) {
             try? fileManager.copyItem(at: joercSource, to: joercDest)
         }
     }
@@ -51,7 +52,11 @@ func setupJoeResources() {
     // Copy syntax directory if not present
     let syntaxDest = joeHomeURL.appendingPathComponent("syntax")
     if !fileManager.fileExists(atPath: syntaxDest.path) {
-        if let syntaxSource = frameworkBundle.url(forResource: "syntax", withExtension: nil) {
+        if let syntaxSource = Bundle.main.url(
+            forResource: "syntax",
+            withExtension: nil,
+            subdirectory: "joe"
+        ) {
             try? fileManager.copyItem(at: syntaxSource, to: syntaxDest)
         }
     }
@@ -59,8 +64,24 @@ func setupJoeResources() {
     // Copy colors directory if not present
     let colorsDest = joeHomeURL.appendingPathComponent("colors")
     if !fileManager.fileExists(atPath: colorsDest.path) {
-        if let colorsSource = frameworkBundle.url(forResource: "colors", withExtension: nil) {
+        if let colorsSource = Bundle.main.url(
+            forResource: "colors",
+            withExtension: nil,
+            subdirectory: "joe"
+        ) {
             try? fileManager.copyItem(at: colorsSource, to: colorsDest)
+        }
+    }
+
+    // Copy file type rules if not present
+    let ftypercDest = joeHomeURL.appendingPathComponent("ftyperc")
+    if !fileManager.fileExists(atPath: ftypercDest.path) {
+        if let ftypercSource = Bundle.main.url(
+            forResource: "ftyperc",
+            withExtension: nil,
+            subdirectory: "joe"
+        ) {
+            try? fileManager.copyItem(at: ftypercSource, to: ftypercDest)
         }
     }
 }
@@ -85,23 +106,18 @@ func setupJoeResources() {
                                     error:nil];
     }
 
-    // Find joe.framework bundle
-    NSBundle *frameworkBundle = [NSBundle bundleWithIdentifier:@"com.example.joe"];
-    if (!frameworkBundle) {
-        NSLog(@"joe.framework not found");
-        return;
-    }
-
     // Copy joerc if not present
-    NSURL *joercDest = [joeHomeURL URLByAppendingPathComponent:@"joerc"];
+    NSURL *joercDest = [documentsURL URLByAppendingPathComponent:@".joerc"];
     if (![fileManager fileExistsAtPath:joercDest.path]) {
-        NSURL *joercSource = [frameworkBundle URLForResource:@"joerc" withExtension:nil];
+        NSURL *joercSource = [[NSBundle mainBundle] URLForResource:@"joerc"
+                                                     withExtension:nil
+                                                      subdirectory:@"joe"];
         if (joercSource) {
             [fileManager copyItemAtURL:joercSource toURL:joercDest error:nil];
         }
     }
 
-    // Similar for syntax/ and colors/ directories...
+    // Copy ftyperc, syntax/, and colors/ from the same app resource directory.
 }
 ```
 
@@ -129,8 +145,9 @@ After setup, your app's Documents directory should contain:
 
 ```
 ~/Documents/
+  ├── .joerc              # Main configuration
   └── .joe/
-      ├── joerc           # Main configuration
+      ├── ftyperc         # File type and syntax selection rules
       ├── syntax/         # Syntax highlighting definitions
       │   ├── c.jsf
       │   ├── python.jsf

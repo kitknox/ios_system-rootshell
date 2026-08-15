@@ -15,17 +15,10 @@ let additionalPlatforms = ["xros", "xrsimulator"]  // visionOS and visionOS Simu
 let allSchemes = [
     "ios_system",
     "awk",
-    "curl_ios",
     "files",
     "joe",
     "shell",
-    "ssh_cmd",
-    "ssh_cmdA",
-    "ssh_agent",
-    "sshd",
-    "tar",
     "text",
-    "vim",
     ]
 
 let args = ProcessInfo.processInfo.arguments

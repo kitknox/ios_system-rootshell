@@ -18,6 +18,7 @@
 # Downloaded files:
 /network_cmds-543/
 /ssh_keygen_110/
+/wasm3/
 
 # Precompiled Headers
 *.gch
