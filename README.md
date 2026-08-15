@@ -1,9 +1,24 @@
+# ios_system — rootshell fork
+
+This repository is the [rootshell](https://www.rootshell.com)-maintained fork
+of [holzschu/ios_system](https://github.com/holzschu/ios_system). It builds
+`ios_system` and its bundled Unix commands for the rootshell application on
+Apple platforms, with thread-safe sessions, concurrent command execution, and
+rootshell-specific integration. The fork is maintained independently and does
+not automatically track subsequent upstream changes.
+
+The `ios_system` API and command names remain unchanged. Report rootshell
+application problems in the
+[rootshell issue tracker](https://github.com/kitknox/rootshell/issues); report
+reproducible upstream `ios_system` problems to the upstream project.
+
+---
+
 # ios_system: Drop-in replacement for system() in iOS programs
 
 
 <p align="center">
 <img src="https://img.shields.io/badge/Platform-iOS%2014.0+-lightgrey.svg" alt="Platform: iOS">
-<a href="https://github.com/holzschu/ios_system/actions"><img src="https://github.com/holzschu/ios_system/workflows/CI/badge.svg" alt="Build Status"/></a>
 <a href="http://twitter.com/nholzschuch"><img src="https://img.shields.io/badge/Twitter-@nholzschuch-blue.svg?style=flat" alt="Twitter"/></a>
 </p>
 
