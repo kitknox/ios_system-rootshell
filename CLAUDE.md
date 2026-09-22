@@ -79,8 +79,10 @@ Commands link against ios_system.framework to automatically use these replacemen
 ### Quick Build (Recommended)
 
 ```bash
-swift run --package-path xcfs build
+xcrun swift run --package-path xcfs build
 ```
+
+Always `xcrun swift` (Xcode 27's toolchain); a swiftly `swift` on PATH fails.
 
 This builds the public release frameworks for iOS, iOS Simulator, Mac Catalyst,
 visionOS, and visionOS Simulator. Output goes to `.build/` with zipped
@@ -89,7 +91,7 @@ frameworks, dSYMs, and checksums.
 ### Build Specific Frameworks
 
 ```bash
-swift run --package-path xcfs build ios_system,awk,shell
+xcrun swift run --package-path xcfs build ios_system,awk,shell
 ```
 
 ### Xcode Build (Individual Frameworks)

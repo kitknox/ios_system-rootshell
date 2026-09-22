@@ -5,7 +5,8 @@ rootshell fork of `ios_system`.
 
 ## Prerequisites
 
-- Xcode 26 or later with the iOS and visionOS SDKs installed
+- Xcode 27 or later with the iOS and visionOS SDKs installed
+- Frameworks target iOS / Mac Catalyst 18.0 and visionOS 26.0
 - macOS 13 or later
 - Git submodules initialized
 
@@ -20,8 +21,12 @@ git submodule update --init --recursive
 Run the builder from the repository root:
 
 ```sh
-swift run --package-path xcfs build
+xcrun swift run --package-path xcfs build
 ```
+
+Use `xcrun swift`, not a bare `swift`: a swiftly or other open-source toolchain
+earlier on `PATH` cannot build against the Xcode 27 SDK (`unknown argument:
+'-target-arch-variant'`, `no such module 'Combine'`).
 
 The default build includes these schemes:
 
@@ -35,7 +40,7 @@ The default build includes these schemes:
 To build selected schemes, pass a comma-separated list:
 
 ```sh
-swift run --package-path xcfs build ios_system,shell
+xcrun swift run --package-path xcfs build ios_system,shell
 ```
 
 ## Supported platforms
@@ -77,8 +82,8 @@ Before creating the tag:
 3. Validate both package manifests:
 
    ```sh
-   swift package dump-package
-   swift package --package-path xcfs dump-package
+   xcrun swift package dump-package
+   xcrun swift package --package-path xcfs dump-package
    ```
 
 4. Commit the manifest changes and tag that exact commit.

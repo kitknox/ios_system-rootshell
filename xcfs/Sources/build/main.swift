@@ -1,5 +1,5 @@
 // use it from root folder:
-// `swift run --package-path xcfs build [all, awk, tar, ios_system, ...]`
+// `xcrun swift run --package-path xcfs build [all, awk, tar, ios_system, ...]`
 
 import FMake
 import Foundation
@@ -36,11 +36,14 @@ var checksums: [[String?]] = []
 // This is needed because archive builds use isolated build directories and can't find
 // framework dependencies that were archived separately
 // Always build ios_system first as it's a common dependency
+// A dedicated DerivedData keeps visionOS archives from linking a stale ios_system
+// out of whichever ~/Library DerivedData folder happened to sort first.
+let derivedDataPath = FileManager.default.currentDirectoryPath + "/.build/DerivedData"
 for platform in additionalPlatforms {
     print("Pre-building ios_system for \(platform) to populate dependencies...")
     try sh("""
         xcodebuild build -project ios_system.xcodeproj -scheme ios_system -sdk \(platform) \
-        -configuration Release EXCLUDED_ARCHS=x86_64
+        -configuration Release -derivedDataPath \(derivedDataPath) EXCLUDED_ARCHS=x86_64
         """)
 }
 
@@ -60,15 +63,7 @@ for scheme in schemes {
         let archivePath = ".build/\(scheme)-\(platform).xcarchive"
         let sdk = platform
         let configuration = "Release"
-        // Find DerivedData path for this project
-        let derivedDataPattern = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent("Library/Developer/Xcode/DerivedData")
-            .path
-        let derivedDataDir = try FileManager.default.contentsOfDirectory(atPath: derivedDataPattern)
-            .first { $0.hasPrefix("ios_system-") }
-        let frameworkSearchPath = derivedDataDir.map {
-            "\(derivedDataPattern)/\($0)/Build/Products/\(configuration)-\(sdk)"
-        } ?? ""
+        let frameworkSearchPath = "\(derivedDataPath)/Build/Products/\(configuration)-\(sdk)"
 
         print("Archiving \(scheme) for \(platform)...")
         try sh("""
@@ -110,6 +105,8 @@ for scheme in schemes {
 
         // Zip and generate checksum
         let zip = "\(scheme).xcframework.zip"
+        // zip -r appends to an existing archive, which kept stale slices around.
+        try sh("rm -f \(zip)")
         try sh("zip --symlinks -r \(zip) \(scheme).xcframework")
         let chksum = try sha(path: zip)
         checksums.append([zip, chksum])
